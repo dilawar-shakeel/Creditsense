@@ -1,0 +1,41 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-creditsense}
+      POSTGRES_USER: ${POSTGRES_USER:-creditsense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-creditsense}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    command: uvicorn creditsense.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      ENVIRONMENT: docker
+      DATABASE_URL: postgresql+psycopg://creditsense:creditsense@db:5432/creditsense
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  agent:
+    build: .
+    command: python -m creditsense.agents.worker
+    environment:
+      ENVIRONMENT: docker
+      DATABASE_URL: postgresql+psycopg://creditsense:creditsense@db:5432/creditsense
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
