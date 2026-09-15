@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+
+
+# Generated datasets
+src/creditsense/data/raw/*.csv
+
+# Trained model files
+src/creditsense/ml/artifacts/*.joblib
+src/creditsense/ml/artifacts/*.metrics.json
+src/creditsense/ml/artifacts/*.metadata.json
