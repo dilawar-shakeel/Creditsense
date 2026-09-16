@@ -135,10 +135,10 @@ Each task has a **Notes** line — record the actual library/pattern used, key d
   - Notes: All four tables exist via the two migrations under `src/creditsense/db/migrations/versions/`. **2026-09-16:** the schema had three real problems that would have blocked Phase 4 entirely, fixed in a second migration (`20260916_0002_rag_corpus_schema.py`): (1) a regulation/policy document couldn't be saved at all, because `documents` required an applicant and a regulation doesn't have one — fixed by allowing that field to be empty; (2) the keyword-search column existed but nothing ever filled it in, so keyword search would have silently returned nothing forever — it's now a column Postgres fills in automatically and can never forget to update; (3) a chunk of regulation text had no way to record which regulation number, title, or related regulations it belonged to — added, and needed for the citation feature. There was also no code anywhere that could actually open a database connection — added `src/creditsense/db/session.py`.
 - [x] DONE **P2.2** — SQLAlchemy 2.0 models + migrations (Alembic or equivalent)
   - Notes: SQLAlchemy models are defined in `src/creditsense/db/models.py`; Alembic manages the initial revision in `src/creditsense/db/migrations/versions/20260915_0001_initial_schema.py`, including the pgvector extension and the four Phase 2 tables. See P2.1 for the follow-up migration.
-- [ ] TODO **P2.3** — Seed script to load synthetic applicant data into Postgres
-  - Notes: Not started. Now unblocked by P1.7 (applicants finally have an ID to load against).
-- [ ] TODO **P2.4** — SQL views for portfolio exposure aggregation (sector-level exposure)
-  - Notes: —
+- [x] DONE **P2.4** — SQL views for portfolio exposure aggregation (sector-level exposure)
+  - Notes: `src/creditsense/db/migrations/versions/20260916_0003_portfolio_exposure_view.py` adds `portfolio_sector_exposure` (sector, applicant count, total exposure, % of book) — what `get_portfolio_exposure(sector)` (P6.4) and the 25% concentration check in policy P-1 will read from. Verified against the real 50k-row portfolio: percentages sum to 100.01% (rounding), largest sector is Retail/Trade at 21.80% — no sector currently breaches the 25% cap.
+- [x] DONE **P2.3** — Seed script to load synthetic applicant data into Postgres
+  - Notes: `src/creditsense/db/seed.py`; upserts on `applicant_id` in batches of 1000 (safe to re-run), `--limit N` for a fast dev subset. Verified: all 50,000 applicants loaded (`SELECT count(*) FROM applicants` = 50000).
 
 ### Phase 3 — Classical ML Layer (XGBoost)
 - [x] DONE **P3.1** — EDA + feature engineering pipeline
