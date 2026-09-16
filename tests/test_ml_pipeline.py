@@ -6,13 +6,19 @@ from sklearn.frozen import FrozenEstimator
 from xgboost import XGBClassifier
 
 from creditsense.ml.features import (
+    LEAKAGE_COLUMNS,
+    RAW_FEATURES_STAGE1,
     Stage1Preprocessor,
     build_monotone_constraints,
     build_stage2_features,
 )
 from creditsense.ml.models import stage2_monotone_constraints
 from creditsense.ml.models import explain_decision
-from creditsense.ml.train import recommend_threshold
+from creditsense.ml.train import (
+    build_cutoff_trade_off_table,
+    recommend_threshold,
+    select_cutoff_matching_default_rate,
+)
 
 
 @pytest.fixture
@@ -92,6 +98,41 @@ def test_recommend_threshold_returns_a_valid_cutoff():
 
     assert 0.0 <= threshold <= 1.0
     assert 0.0 <= ks <= 1.0
+
+
+def test_stage1_feature_list_never_includes_a_leakage_column():
+    """Fix 3-D: RAW_FEATURES_STAGE1 must never include a column the data generator
+    warns is derived from the hidden score used to draw the default label — that
+    would let the model "predict" the label by reading off the value used to
+    generate it, rather than learning a recoverable pattern."""
+    assert not (set(RAW_FEATURES_STAGE1) & LEAKAGE_COLUMNS)
+
+
+def test_select_cutoff_matching_default_rate_targets_the_observed_rate():
+    y_true = pd.Series([0] * 90 + [1] * 10)
+    probabilities = np.linspace(0.0, 1.0, 100)
+
+    cutoff, target_decline_rate = select_cutoff_matching_default_rate(
+        y_true, probabilities
+    )
+    decline_rate = float((probabilities >= cutoff).mean())
+
+    assert target_decline_rate == pytest.approx(0.10)
+    assert decline_rate == pytest.approx(0.10, abs=0.02)
+
+
+def test_cutoff_trade_off_table_covers_a_spread_of_decline_rates():
+    y_true = pd.Series([0, 1] * 50)
+    probabilities = np.linspace(0.0, 1.0, 100)
+
+    table = build_cutoff_trade_off_table(y_true, probabilities)
+
+    assert len(table) > 1
+    decline_rates = [row["decline_rate"] for row in table]
+    assert decline_rates == sorted(decline_rates, reverse=True)
+    for row in table:
+        assert 0.0 <= row["precision_default"] <= 1.0
+        assert 0.0 <= row["recall_default"] <= 1.0
 
 
 def test_shap_explanation_returns_plain_english_reason_codes():

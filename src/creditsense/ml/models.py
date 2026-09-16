@@ -30,12 +30,8 @@ def get_raw_xgb_model(calibrated_model: CalibratedClassifierCV) -> XGBClassifier
     return estimator
 
 
-def explain_decision(
-    calibrated_model: CalibratedClassifierCV,
-    row: pd.DataFrame,
-    top_n: int = 3,
-) -> str:
-    """Return top SHAP drivers; SHAP is loaded only when explanations are requested."""
+def build_shap_explainer(calibrated_model: CalibratedClassifierCV) -> Any:
+    """Build a SHAP TreeExplainer once; SHAP is loaded only when this is called."""
     try:
         import shap
     except ImportError as exc:
@@ -44,7 +40,26 @@ def explain_decision(
         ) from exc
 
     raw_model = get_raw_xgb_model(calibrated_model)
-    shap_values = shap.TreeExplainer(raw_model).shap_values(row)
+    return shap.TreeExplainer(raw_model)
+
+
+def explain_decision(
+    calibrated_model: CalibratedClassifierCV,
+    row: pd.DataFrame,
+    top_n: int = 3,
+    explainer: Any = None,
+) -> str:
+    """Return top SHAP drivers.
+
+    Fix 3-F: building a TreeExplainer is the slow part of this call, and it depends
+    only on the trained model, not on the applicant row — so callers that score many
+    applicants (e.g. the bundle, once loaded) should build it once with
+    `build_shap_explainer()` and pass it in here instead of rebuilding it per request.
+    """
+    if explainer is None:
+        explainer = build_shap_explainer(calibrated_model)
+
+    shap_values = explainer.shap_values(row)
     if isinstance(shap_values, list):
         shap_values = shap_values[1]
     contributions = pd.Series(np.ravel(shap_values), index=row.columns)
@@ -69,6 +84,15 @@ class CreditSenseBundle:
     stage2_tier_encoder: Any
     stage2_model: XGBRegressor
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Fix 3-F: lazily built once and reused for every prediction, instead of being
+    # rebuilt from scratch on every /predict/credit-risk call. Excluded from the
+    # dataclass's generated __eq__/repr and never set at construction time.
+    _shap_explainer: Any = field(default=None, repr=False, compare=False)
+
+    def _get_shap_explainer(self) -> Any:
+        if self._shap_explainer is None:
+            self._shap_explainer = build_shap_explainer(self.stage1_model)
+        return self._shap_explainer
 
     def save(self, path: str | Path) -> None:
         joblib.dump(self, path)
@@ -91,7 +115,9 @@ class CreditSenseBundle:
             "default_probability": probability,
             "decision_cutoff": self.stage1_threshold,
             "decision": decision,
-            "explanation": explain_decision(self.stage1_model, stage1_frame),
+            "explanation": explain_decision(
+                self.stage1_model, stage1_frame, explainer=self._get_shap_explainer()
+            ),
         }
         if decision == "REFER_FOR_LIMIT":
             stage2_frame, _ = build_stage2_features(

@@ -1,0 +1,172 @@
+{
+  "training_rows": 30000,
+  "cutoff_selection_rows": 10000,
+  "test_rows": 10000,
+  "stage1": {
+    "threshold": 0.16962583881773483,
+    "threshold_rule": "cutoff whose decline rate on the cutoff-selection slice matches the observed default rate (fix 3-B) \u2014 chosen without assuming a cost ratio between a missed default and a lost good customer",
+    "threshold_selection_rows": "cutoff_frame (20% of data, held out from training and calibration, never touched by test-set metrics below)",
+    "target_decline_rate": 0.1017,
+    "ks_threshold": 0.09729096191013474,
+    "ks_score": 0.18609848757256003,
+    "cutoff_trade_off_table": [
+      {
+        "cutoff": 0.049245,
+        "decline_rate": 0.95,
+        "precision_default": 0.10463157894736842,
+        "recall_default": 0.9773844641101278
+      },
+      {
+        "cutoff": 0.055869,
+        "decline_rate": 0.9,
+        "precision_default": 0.10666666666666667,
+        "recall_default": 0.943952802359882
+      },
+      {
+        "cutoff": 0.060664,
+        "decline_rate": 0.85,
+        "precision_default": 0.10858823529411765,
+        "recall_default": 0.9075712881022615
+      },
+      {
+        "cutoff": 0.065181,
+        "decline_rate": 0.7999,
+        "precision_default": 0.11163895486935867,
+        "recall_default": 0.8780727630285152
+      },
+      {
+        "cutoff": 0.068919,
+        "decline_rate": 0.75,
+        "precision_default": 0.11293333333333333,
+        "recall_default": 0.8328416912487709
+      },
+      {
+        "cutoff": 0.072958,
+        "decline_rate": 0.7,
+        "precision_default": 0.11528571428571428,
+        "recall_default": 0.7935103244837758
+      },
+      {
+        "cutoff": 0.076481,
+        "decline_rate": 0.65,
+        "precision_default": 0.11892307692307692,
+        "recall_default": 0.76007866273353
+      },
+      {
+        "cutoff": 0.080031,
+        "decline_rate": 0.6001,
+        "precision_default": 0.12231294784202633,
+        "recall_default": 0.7217305801376598
+      },
+      {
+        "cutoff": 0.083742,
+        "decline_rate": 0.55,
+        "precision_default": 0.12636363636363637,
+        "recall_default": 0.6833824975417896
+      },
+      {
+        "cutoff": 0.087691,
+        "decline_rate": 0.5,
+        "precision_default": 0.13,
+        "recall_default": 0.63913470993117
+      },
+      {
+        "cutoff": 0.091466,
+        "decline_rate": 0.45,
+        "precision_default": 0.13555555555555557,
+        "recall_default": 0.599803343166175
+      },
+      {
+        "cutoff": 0.09617,
+        "decline_rate": 0.4,
+        "precision_default": 0.14325,
+        "recall_default": 0.5634218289085545
+      },
+      {
+        "cutoff": 0.101467,
+        "decline_rate": 0.35,
+        "precision_default": 0.146,
+        "recall_default": 0.5024582104228122
+      },
+      {
+        "cutoff": 0.107203,
+        "decline_rate": 0.3,
+        "precision_default": 0.15266666666666667,
+        "recall_default": 0.4503441494591937
+      },
+      {
+        "cutoff": 0.1148,
+        "decline_rate": 0.25,
+        "precision_default": 0.16,
+        "recall_default": 0.39331366764995085
+      },
+      {
+        "cutoff": 0.125848,
+        "decline_rate": 0.2,
+        "precision_default": 0.178,
+        "recall_default": 0.3500491642084562
+      },
+      {
+        "cutoff": 0.144049,
+        "decline_rate": 0.15,
+        "precision_default": 0.194,
+        "recall_default": 0.2861356932153392
+      },
+      {
+        "cutoff": 0.170207,
+        "decline_rate": 0.1,
+        "precision_default": 0.213,
+        "recall_default": 0.20943952802359883
+      },
+      {
+        "cutoff": 0.206887,
+        "decline_rate": 0.05,
+        "precision_default": 0.272,
+        "recall_default": 0.13372664700098327
+      }
+    ],
+    "ceiling_roc_auc": 0.6462532451651083,
+    "ceiling_pr_auc": 0.20406925495227285,
+    "label_flip_rate": 0.04,
+    "ceiling_note": "roc_auc/pr_auc above are bounded by ceiling_roc_auc/ceiling_pr_auc: the data generator flips label_flip_rate of labels after drawing them, so no model can score better than the hidden risk_index_score does against the resulting noisy label",
+    "pr_auc": 0.19161386303136627,
+    "roc_auc": 0.6317861656515389,
+    "brier_score": 0.08842472431457368,
+    "positive_rate": 0.1018,
+    "predicted_positive_rate": 0.1025,
+    "precision_default": 0.24097560975609755,
+    "recall_default": 0.24263261296660119,
+    "f1_default": 0.24180127263827705,
+    "precision_non_default": 0.9140947075208914,
+    "recall_non_default": 0.9133823201959475,
+    "confusion_matrix_labels": [
+      "non_default",
+      "default"
+    ],
+    "confusion_matrix": [
+      [
+        8204,
+        778
+      ],
+      [
+        771,
+        247
+      ]
+    ]
+  },
+  "stage2": {
+    "r2": 0.9739115520825787,
+    "r2_note": "recommend_credit_limit_pkr is a near-deterministic formula of turnover, collateral and risk (see the generator), so a high R^2 mostly reflects re-deriving that arithmetic, not underwriting skill \u2014 read mae_pct_of_mean_actual and the cap-hit breakdown instead",
+    "explained_variance": 0.9739157809068545,
+    "mae_pkr": 1687322.860071765,
+    "mae_pct_of_mean_actual": 11.093690300906504,
+    "rmse_pkr": 3947537.7237571976,
+    "median_absolute_error_pkr": 494953.25,
+    "mean_actual_pkr": 15209752.7,
+    "mean_predicted_pkr": 15159494.0,
+    "mean_error_pkr": -50258.78521239014,
+    "cap_hit_rows": 2,
+    "mae_pkr_cap_hit_rows": 13659669.0,
+    "mae_pkr_non_cap_rows": 1684927.911854136
+  }
+}

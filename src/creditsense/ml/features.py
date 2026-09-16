@@ -21,6 +21,18 @@ RAW_FEATURES_STAGE1 = [
     "working_capital_cycle_days",
     "utility_default_count_12m",
 ]
+# Columns the data generator (src/creditsense/data/generators/portfolio.py) builds
+# directly from the hidden score used to draw TARGET_1, and warns must never be used to
+# predict it (target leakage). Fix 3-D: a test asserts none of these ever reach
+# RAW_FEATURES_STAGE1.
+LEAKAGE_COLUMNS = {
+    "risk_index_score",
+    "recommend_credit_limit_pkr",
+    "credit_limit_hit_obligor_cap",
+    "credit_limit_hit_group_cap",
+    "credit_limit_is_full_decline",
+}
+
 TARGET_1 = "default_probability_12m"
 STAGE2_EXTRA_FEATURES = [
     "annual_bank_turnover_pkr",
