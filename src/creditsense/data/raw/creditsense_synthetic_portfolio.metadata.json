@@ -1,25 +1,25 @@
 {
   "dataset_name": "CreditSense synthetic SME portfolio",
-  "dataset_version": "1.0.0",
-  "created_date": "2026-09-14",
+  "dataset_version": "1.1.0",
+  "created_date": "2026-09-16",
   "row_count": 50000,
-  "column_count": 42,
+  "column_count": 43,
   "random_seed": 42,
-  "source_generator": "tests/synthetic_data/creditsense_generator.py",
+  "source_generator": "src/creditsense/data/generators/portfolio.py",
   "csv_file": "creditsense_synthetic_portfolio.csv",
   "validation": {
     "test_command": "pytest tests/synthetic_data -v",
-    "tests_passed": 74,
-    "tests_failed": 0,
-    "duplicate_rows": 0
+    "duplicate_rows": 0,
+    "duplicate_applicant_ids": 0
   },
   "scope_decisions": {
-    "ocr_noise": "skipped",
-    "currency_format_variation": "skipped",
-    "missing_collateral_values": "skipped",
-    "urdu_english_notes": "skipped"
+    "ocr_noise": "skipped (see tests/fixtures/messy_applications.json for a small hand-built substitute used to test FinancialAnalystAgent)",
+    "currency_format_variation": "skipped (see tests/fixtures/messy_applications.json)",
+    "missing_collateral_values": "skipped (see tests/fixtures/messy_applications.json)",
+    "urdu_english_notes": "skipped (see tests/fixtures/messy_applications.json)"
   },
   "columns": [
+    "applicant_id",
     "sector_risk_code",
     "sector_risk_weight",
     "load_shedding_impact_score",

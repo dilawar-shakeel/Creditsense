@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import creditsense_generator as gen
+from creditsense.data.generators import portfolio as gen
 
 
 # ======================================================================================

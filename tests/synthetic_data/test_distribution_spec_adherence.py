@@ -15,7 +15,7 @@ import pandas as pd
 import pytest
 from scipy import stats
 
-import creditsense_generator as gen
+from creditsense.data.generators import portfolio as gen
 from stat_helpers import theoretical_mean_clipped, theoretical_mean_truncated
 
 from conftest import CATEGORICAL_PROPORTION_TOLERANCE_PCT, MOMENT_RELATIVE_TOLERANCE

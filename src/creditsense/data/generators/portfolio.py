@@ -6,11 +6,17 @@ Lahore / Punjab SME Portfolio | SBP Prudential Regulations for SME Financing
 Generated per the CreditSense Feature Architecture & Synthetic Data Generation Guide,
 Sections 1-5, under the rigid REQUIREMENT 1-6 specification.
 
-Run: python creditsense_v2.py
+Run: python -m creditsense.data.generators.portfolio
+
+Moved here from tests/synthetic_data/creditsense_generator.py (Phase 1 fix 1-B) so that
+regenerating the dataset does not require importing production code out of the test
+tree. tests/synthetic_data/conftest.py imports build_dataset from this module.
 """
 
 from __future__ import annotations
 
+import json
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -604,13 +610,62 @@ def build_dataset(n: int = N_RECORDS, seed: int = RANDOM_SEED) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     df = generate_features(n, rng)
     df = generate_labels(df, rng)
+
+    # applicant_id: a stable, human-readable row identifier. Assigned last, from row
+    # order alone (no RNG draw), so it never perturbs the feature/label generation
+    # above and stays identical across runs for a fixed seed. Required so the Postgres
+    # `applicants` table (Phase 2) has a primary key to seed from.
+    df.insert(0, "applicant_id", [f"SME-{i + 1:06d}" for i in range(len(df))])
     return df
 
 
-if __name__ == "__main__":
-    dataset = build_dataset()
+DEFAULT_CSV_PATH = Path("src/creditsense/data/raw/creditsense_synthetic_portfolio.csv")
+DEFAULT_METADATA_PATH = Path("src/creditsense/data/raw/creditsense_synthetic_portfolio.metadata.json")
+DATASET_VERSION = "1.1.0"  # bumped from 1.0.0 (fix 1-A): added applicant_id
+
+
+def write_metadata(df: pd.DataFrame, metadata_path: Path) -> None:
+    metadata = {
+        "dataset_name": "CreditSense synthetic SME portfolio",
+        "dataset_version": DATASET_VERSION,
+        "created_date": date.today().isoformat(),
+        "row_count": int(len(df)),
+        "column_count": int(len(df.columns)),
+        "random_seed": RANDOM_SEED,
+        "source_generator": "src/creditsense/data/generators/portfolio.py",
+        "csv_file": "creditsense_synthetic_portfolio.csv",
+        "validation": {
+            "test_command": "pytest tests/synthetic_data -v",
+            "duplicate_rows": int(df.duplicated().sum()),
+            "duplicate_applicant_ids": int(df["applicant_id"].duplicated().sum()),
+        },
+        "scope_decisions": {
+            "ocr_noise": "skipped (see tests/fixtures/messy_applications.json for a small "
+                         "hand-built substitute used to test FinancialAnalystAgent)",
+            "currency_format_variation": "skipped (see tests/fixtures/messy_applications.json)",
+            "missing_collateral_values": "skipped (see tests/fixtures/messy_applications.json)",
+            "urdu_english_notes": "skipped (see tests/fixtures/messy_applications.json)",
+        },
+        "columns": list(df.columns),
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+
+def main(
+    n: int = N_RECORDS,
+    seed: int = RANDOM_SEED,
+    csv_path: Path = DEFAULT_CSV_PATH,
+    metadata_path: Path = DEFAULT_METADATA_PATH,
+) -> pd.DataFrame:
+    dataset = build_dataset(n=n, seed=seed)
     validate_dataset(dataset)
-    output_path = Path("src/creditsense/data/raw/creditsense_synthetic_portfolio.csv")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    dataset.to_csv(output_path, index=False)
-    print(f"\nSaved {len(dataset):,} rows to {output_path}")
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    dataset.to_csv(csv_path, index=False)
+    write_metadata(dataset, metadata_path)
+    print(f"\nSaved {len(dataset):,} rows to {csv_path}")
+    print(f"Saved metadata to {metadata_path}")
+    return dataset
+
+
+if __name__ == "__main__":
+    main()
