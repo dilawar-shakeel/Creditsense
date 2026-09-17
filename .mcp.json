@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "creditsense": {
+      "command": "uv",
+      "args": ["--directory", "D:\\CreditSense", "run", "python", "-m", "creditsense.mcp_server"]
+    }
+  }
+}

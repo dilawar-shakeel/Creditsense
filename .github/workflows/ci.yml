@@ -19,5 +19,8 @@ jobs:
         run: uv sync --frozen
       - name: Lint
         run: uv run ruff check src tests
+      # P8.1: coverage runs in CI so the recorded number stays honest over time rather
+      # than being a figure measured once by hand. The `live` marker is deselected by
+      # default (see pyproject.toml), so CI never needs Docker or an OpenAI key.
       - name: Test
-        run: uv run pytest
+        run: uv run pytest --cov --cov-report=term-missing

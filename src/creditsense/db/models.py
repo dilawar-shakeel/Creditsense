@@ -36,6 +36,12 @@ class Applicant(Base):
     years_in_business: Mapped[float] = mapped_column(nullable=True)
     documentation_tier: Mapped[str] = mapped_column(String(64), nullable=True)
     raw_profile_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
+    # Migration 0004 (P6.6) — synthetic, deterministically generated from applicant_id
+    # by db/seed.py, never real. Exist so the MCP masking layer has real identifier
+    # fields to redact; the rest of the applicant record is ratios/scores/PKR amounts
+    # with nothing else identifier-shaped to mask. NEVER returned unmasked by any tool.
+    account_number: Mapped[str] = mapped_column(String(24), nullable=True)
+    cnic: Mapped[str] = mapped_column(String(15), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -35,6 +35,16 @@ DEFAULT_REPORT_PATH = Path("reports/rag/retrieval_eval.md")
 
 CONFIGURATIONS = ["keyword_only", "dense_only", "fused", "fused_reranked"]
 
+# A confidence floor below which "no confident hit" is declared for an out-of-scope
+# query. RRF scores are small (~1/60 per contributing list), so a low fixed floor is
+# appropriate; tune once real query volume is observed. Promoted to module level
+# (P5.4) so ComplianceAgent's own scale-appropriate floor can reference this docstring
+# without importing a value calibrated for a different score scale -- this constant is
+# for RRF-scale scores ("keyword_only"/"dense_only"/"fused") only. The reranked
+# configuration's scores are an LLM's 0-10 scale, on which this floor never trips; see
+# agents/compliance.py and Settings.min_rerank_score_for_citation for that case.
+OUT_OF_SCOPE_SCORE_FLOOR = 0.01
+
 
 @dataclass(frozen=True)
 class QueryMetrics:
@@ -122,11 +132,6 @@ def run_eval(
     rows = _load_verified_queries(queries_path)
     in_scope_rows = [r for r in rows if r["relevant_regulation_numbers"]]
     out_of_scope_rows = [r for r in rows if not r["relevant_regulation_numbers"]]
-
-    # A confidence floor below which "no confident hit" is declared for an
-    # out-of-scope query. RRF scores are small (~1/60 per contributing list), so a
-    # low fixed floor is appropriate; tune once real query volume is observed.
-    OUT_OF_SCOPE_SCORE_FLOOR = 0.01
 
     results: dict[str, dict] = {}
     with session_scope() as session:

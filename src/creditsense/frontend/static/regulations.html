@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CreditSense — Regulation Explorer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+  <span class="font-bold text-lg">CreditSense</span>
+  <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">Work Queue</a>
+  <a href="regulations.html" class="text-sm font-medium text-slate-900">Regulations</a>
+  <a href="portfolio.html" class="text-sm text-slate-500 hover:text-slate-900">Portfolio</a>
+  <a href="audit.html" class="text-sm text-slate-500 hover:text-slate-900">Audit Trail</a>
+</nav>
+
+<main class="max-w-4xl mx-auto px-6 py-8">
+  <h1 class="text-2xl font-bold mb-1">Regulation Explorer</h1>
+  <p class="text-slate-500 text-sm mb-4">
+    Ask a question in plain English. Retrieval runs hybrid BM25 + dense search over the
+    real SBP-derived and simulated-policy corpus. If nothing scores confidently, the
+    honest answer is "insufficient data" -- not a guess.
+  </p>
+
+  <div class="flex gap-2 mb-6">
+    <input id="q" type="text" placeholder="e.g. single-borrower exposure limit"
+           class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+    <button id="search-btn" class="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg">Search</button>
+  </div>
+
+  <div id="results" class="space-y-3"></div>
+
+  <div id="detail" class="mt-8"></div>
+</main>
+
+<script>
+const { el, fetchJSON, skeleton, emptyState, errorState, provenanceBadge } = CS;
+
+async function runSearch() {
+  const q = document.getElementById("q").value.trim();
+  const results = document.getElementById("results");
+  results.innerHTML = "";
+  if (!q) return;
+  results.appendChild(skeleton(4));
+  try {
+    const rows = await fetchJSON(`/api/regulations/search?q=${encodeURIComponent(q)}`);
+    results.innerHTML = "";
+    if (rows.length === 0) {
+      results.appendChild(emptyState('Insufficient data to answer confidently -- escalate to a human rather than guess.'));
+      return;
+    }
+    rows.forEach((r) => {
+      results.appendChild(el(
+        "a", { href: `regulations.html?number=${encodeURIComponent(r.regulation_number)}`,
+               class: "block bg-white border border-slate-200 rounded-lg px-4 py-3 hover:border-slate-400" },
+        el("div", { class: "flex items-center gap-2 mb-1" },
+          el("span", { class: "font-semibold" }, r.regulation_number),
+          el("span", { class: "text-sm text-slate-500" }, r.clause_title || ""),
+          provenanceBadge(r.provenance),
+          el("span", { class: "ml-auto text-xs text-slate-400" }, `score ${r.score.toFixed(2)}`)
+        ),
+        el("p", { class: "text-sm text-slate-600 line-clamp-2" }, r.content.slice(0, 220) + (r.content.length > 220 ? "..." : ""))
+      ));
+    });
+  } catch (err) {
+    results.innerHTML = "";
+    results.appendChild(errorState(err.message));
+  }
+}
+
+async function loadDetail(number) {
+  const detail = document.getElementById("detail");
+  detail.innerHTML = "";
+  detail.appendChild(skeleton(4));
+  try {
+    const reg = await fetchJSON(`/api/regulations/${encodeURIComponent(number)}`);
+    detail.innerHTML = "";
+    detail.appendChild(el(
+      "div", { class: "bg-white border border-slate-200 rounded-lg p-5" },
+      el("div", { class: "flex items-center gap-2 mb-2" },
+        el("h2", { class: "text-xl font-bold" }, reg.regulation_number),
+        provenanceBadge(reg.provenance)
+      ),
+      el("h3", { class: "text-slate-600 mb-3" }, reg.clause_title || ""),
+      el("p", { class: "whitespace-pre-wrap text-sm leading-relaxed mb-4" }, reg.content),
+      reg.cross_references.length
+        ? el("div", {},
+            el("div", { class: "text-xs font-semibold text-slate-500 mb-1" }, "Cross-references"),
+            el("div", { class: "flex gap-2 flex-wrap" },
+              ...reg.cross_references.map((ref) => el(
+                "a", { href: `regulations.html?number=${encodeURIComponent(ref)}`,
+                       class: "text-xs bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1" }, ref))
+            ))
+        : null
+    ));
+  } catch (err) {
+    detail.innerHTML = "";
+    detail.appendChild(errorState(err.message));
+  }
+}
+
+document.getElementById("search-btn").addEventListener("click", runSearch);
+document.getElementById("q").addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+const number = new URLSearchParams(location.search).get("number");
+if (number) loadDetail(number);
+</script>
+</body>
+</html>
