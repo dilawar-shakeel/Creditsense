@@ -19,6 +19,10 @@ Everything runs locally on Docker Compose. The data is synthetic; the SBP regula
 | **API** | `/predict/credit-risk`, `/applications/underwrite` (+ SSE trace), applicant/decision/regulation/portfolio reads, PDF intake. | `src/creditsense/api/` |
 | **Frontend** | Six screens, vanilla JS + Tailwind CDN, served by the same FastAPI app. No build step. | `src/creditsense/frontend/` |
 
+<<<<<<< HEAD
+=======
+**348 offline tests** (plus 7 marker-gated live tests), Ruff-clean, coverage enforced in CI.
+>>>>>>> origin/phase-0-foundation
 
 ---
 
@@ -43,6 +47,10 @@ $env:PYTHONPATH = "src"
 python -m creditsense.data.generators.portfolio   # 50,000-row CSV + metadata
 python -m creditsense.ml.train                    # trains and saves the model bundle
 alembic upgrade head
+<<<<<<< HEAD
+=======
+python -m creditsense.rag.ingest --dry-run        # parses the corpus, no API calls (this is what CI runs)
+>>>>>>> origin/phase-0-foundation
 python -m creditsense.rag.ingest                  # embeds and stores all 87 chunks (needs OPENAI_API_KEY)
 python -m creditsense.db.seed --cohort tests/fixtures/messy_applications.json
 ```
@@ -55,7 +63,11 @@ Copy `.env.example` to `.env` first. `OPENAI_API_KEY` is required for anything t
 
 **1. The queue, not a dashboard** — `/ui/`. Three tabs; "Needs You" holds the escalations. The product framing is that this is the queue where the system's *deliberate refusals* get resolved by a person.
 
+<<<<<<< HEAD
 **2. Mess becoming clean** — open an applicant with `urdu_english_notes`. Left column shows the document *as received* (`"Rs. 2,130,819"`, a null collateral field, the Urdu-English note verbatim) and *as understood* — each field tagged `From document` / `Bank record` / `Derived` / `Unresolved`.
+=======
+**2. Mess becoming clean** — open an applicant with `ocr_digit_transposition` or `urdu_english_notes` noise. Left column shows the document *as received* (`"Rs. 2,130,819"`, a null collateral field, the Urdu-English note verbatim) and *as understood* — each field tagged `From document` / `Bank record` / `Derived` / `Unresolved`.
+>>>>>>> origin/phase-0-foundation
 > The line that lands: **the numbers were never touched by an LLM.** Currency parsing is rules-only, deliberately, because a model silently changing a digit in a turnover figure is undetectable downstream. The LLM only ever sees the free-text note.
 
 **3. The agents running live** — the centre column streams real `stage.completed` events over SSE with real elapsed times. Compliance is visibly the slowest stage (retrieval + rerank + an LLM call) — that's worth showing, not hiding.
@@ -77,8 +89,15 @@ Copy `.env.example` to `.env` first. `OPENAI_API_KEY` is required for anything t
 | Stage 1 ROC-AUC | **0.632** | Against a **0.646 ceiling** — the generator flips 4% of labels after drawing them, so no model can beat the hidden risk index against the resulting noisy label. That's ~98% of what's achievable on this data. |
 | Stage 1 PR-AUC / Brier / KS | 0.192 / 0.088 / 0.186 | PR-AUC ceiling is 0.204. |
 | Decision cutoff | 0.170 | Chosen so the **decline rate matches the observed default rate** (10.17%) — no invented cost ratio. Full trade-off table is in `creditsense_bundle.metrics.json`. |
+<<<<<<< HEAD
 | Retrieval (fused + reranked) | precision@5 **0.267**, recall@10 **0.972**, MRR **0.943**, nDCG@5 **0.953** | Reranking is an *ordering* win: recall is identical to fused-only; MRR went 0.865 → 0.943. |
 | Out-of-scope no-hit rate | **0.80** | 4 of 5 unanswerable questions correctly return nothing. Not 5 of 5. |
+=======
+| Stage 2 (credit limit) R² | 0.974 | **Don't quote this.** The target is a near-deterministic formula of turnover/collateral/risk, so a high R² mostly reflects re-deriving arithmetic. Read `mae_pct_of_mean_actual` = **11.1%** instead. |
+| Retrieval (fused + reranked) | precision@5 **0.267**, recall@10 **0.972**, MRR **0.943**, nDCG@5 **0.953** | Reranking is an *ordering* win: recall is identical to fused-only; MRR went 0.865 → 0.943. |
+| Out-of-scope no-hit rate | **0.80** | 4 of 5 unanswerable questions correctly return nothing. Not 5 of 5. |
+| Tests | **348** offline, 7 live-gated | Coverage 76%, enforced in CI. |
+>>>>>>> origin/phase-0-foundation
 
 All of these come from committed artifacts: `src/creditsense/ml/artifacts/creditsense_bundle.metrics.json` and `reports/rag/retrieval_eval.md`.
 
@@ -91,7 +110,11 @@ All of these come from committed artifacts: `src/creditsense/ml/artifacts/credit
 - **Unverified never renders as passed.** A DB/retrieval failure degrades to `insufficient_data=True`, which the supervisor always escalates on and the UI shows as "couldn't verify."
 - **`/applications/underwrite` is a sync `def` on purpose.** It self-calls `/predict/credit-risk` over blocking HTTP in the same process; `async def` would deadlock on its own call.
 - **MCP masking is a default-deny allowlist.** The generator's row includes six columns that are the model's own answer key; an import-time assertion fails the build if one ever lands in the allowlist.
+<<<<<<< HEAD
 
+=======
+- **No agent framework.** Four functions in sequence. A graph DSL would hide the guardrail, which is the one thing that should be obvious in the code.
+>>>>>>> origin/phase-0-foundation
 
 ---
 
@@ -151,4 +174,7 @@ Recorded rather than hidden — see §8 of `CreditSense_Master_Tracker.md` for t
 | `reports/rag/retrieval_eval.md` | Retrieval evaluation across four configurations |
 | `src/creditsense/data/raw_corpus/MANIFEST.md` | Which corpus text is real SBP regulation vs simulated policy |
 | `src/creditsense/ml/artifacts/creditsense_bundle.metrics.json` | Full model metrics including ceilings and the cutoff trade-off table |
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/phase-0-foundation

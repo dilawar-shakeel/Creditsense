@@ -1,0 +1,54 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    env_file: .env  # fix 0-C: read POSTGRES_* from .env, not just the shell
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-creditsense}
+      POSTGRES_USER: ${POSTGRES_USER:-creditsense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-creditsense}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    command: uvicorn creditsense.api.main:app --host 0.0.0.0 --port 8000
+    env_file: .env  # fix 0-C
+    environment:
+      ENVIRONMENT: docker
+      DATABASE_URL: postgresql+psycopg://creditsense:creditsense@db:5432/creditsense
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # fix 0-D: the trained model is git-ignored, so a clean checkout has no model
+      # baked into the image. Mount it from the host instead of relying on it being
+      # present at build time. Run `python -m creditsense.ml.train` on the host first.
+      - ./src/creditsense/ml/artifacts:/app/src/creditsense/ml/artifacts
+
+  # fix 0-B: creditsense.agents.worker is a print-and-exit stub until Phase 5, so this
+  # service would start, print, and exit immediately on every `docker compose up`,
+  # showing as a crashed container for no reason. Uncomment once the agent does
+  # something that should stay running.
+  # agent:
+  #   build: .
+  #   command: python -m creditsense.agents.worker
+  #   env_file: .env
+  #   environment:
+  #     ENVIRONMENT: docker
+  #     DATABASE_URL: postgresql+psycopg://creditsense:creditsense@db:5432/creditsense
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Fix 0-F: the project is built and locked with uv (pyproject.toml + uv.lock),
+      # but CI was installing from requirements.txt with plain pip — CI could pass on
+      # a dependency set that `uv sync` would never produce, or fail on one it would.
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check src tests
+      # P8.1: coverage runs in CI so the recorded number stays honest over time rather
+      # than being a figure measured once by hand. The `live` marker is deselected by
+      # default (see pyproject.toml), so CI never needs Docker or an OpenAI key.
+      - name: Test
+        run: uv run pytest --cov --cov-report=term-missing

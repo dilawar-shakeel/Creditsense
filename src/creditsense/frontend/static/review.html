@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CreditSense — Application Review</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+  <span class="font-bold text-lg">CreditSense</span>
+  <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">Work Queue</a>
+  <a href="regulations.html" class="text-sm text-slate-500 hover:text-slate-900">Regulations</a>
+  <a href="portfolio.html" class="text-sm text-slate-500 hover:text-slate-900">Portfolio</a>
+  <a href="audit.html" class="text-sm text-slate-500 hover:text-slate-900">Audit Trail</a>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+  <h1 id="page-title" class="text-2xl font-bold mb-1">Application Review</h1>
+  <p id="page-subtitle" class="text-slate-500 text-sm mb-6"></p>
+
+  <div id="content" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
+</main>
+
+<script>
+const { el, fetchJSON, skeleton, emptyState, errorState, verdictBadge, sourceBadge,
+        unresolvedBadge, originBadge, fmtPKR, fmtDate } = CS;
+
+const params = new URLSearchParams(location.search);
+const applicantIdParam = params.get("applicant_id");
+const decisionIdParam = params.get("id");
+const shouldRun = params.get("run") === "1";
+const isSessionSource = params.get("source") === "session";
+
+const STAGES = [
+  { key: "analyze", label: "Financial analyst", detail: "Reading the application" },
+  { key: "score", label: "Risk scoring", detail: "Scoring credit risk" },
+  { key: "check", label: "Compliance check", detail: "Checking SBP regulations" },
+  { key: "decide", label: "Supervisor decision", detail: "Applying the approval guardrail" },
+];
+
+let rawDocument = null;
+let applicantId = applicantIdParam;
+
+function stageCard(stage, state, meta) {
+  const colors = {
+    pending: "border-slate-200 bg-white text-slate-400",
+    running: "border-indigo-300 bg-indigo-50 text-indigo-700",
+    complete: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    failed: "border-red-300 bg-red-50 text-red-800",
+  };
+  const dot = { pending: "○", running: "◐", complete: "✓", failed: "✕" }[state];
+  return el(
+    "div", { class: `border rounded-lg px-4 py-3 ${colors[state]}`, id: `stage-${stage.key}` },
+    el("div", { class: "flex items-center justify-between" },
+      el("span", { class: "font-medium" }, `${dot} ${stage.label}`),
+      meta && meta.duration_ms !== undefined ? el("span", { class: "text-xs" }, `${meta.duration_ms} ms`) : null
+    ),
+    el("div", { class: "text-xs mt-1" }, (meta && meta.summary) || stage.detail)
+  );
+}
+
+function renderTrace(container, stageStates) {
+  container.innerHTML = "";
+  STAGES.forEach((s) => container.appendChild(stageCard(s, stageStates[s.key].state, stageStates[s.key].meta)));
+}
+
+function stageSummary(stage, fields) {
+  if (stage === "analyze") return `${fields.unresolved_fields || 0} unresolved field(s)`;
+  if (stage === "score") return fields.default_probability != null ? `Default probability ${(fields.default_probability * 100).toFixed(1)}%` : "Unavailable -- escalating";
+  if (stage === "check") return `${fields.breach_count || 0} breach(es), ${fields.advisory_count || 0} advisory`;
+  if (stage === "decide") return `Verdict: ${fields.decision}`;
+  return "";
+}
+
+function riskGauge(risk) {
+  if (!risk) return el("div", { class: "text-sm text-slate-500" }, "Risk score unavailable -- escalated to a human.");
+  const p = Math.min(1, Math.max(0, risk.default_probability));
+  const cutoff = Math.min(1, Math.max(0, risk.decision_cutoff));
+  const w = 100;
+  return el("div", { class: "space-y-1" },
+    el("div", { class: "relative h-6 bg-slate-100 rounded" , html: `
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${cutoff*w}%;background:#d1fae5;border-radius:4px 0 0 4px"></div>
+        <div style="position:absolute;left:${cutoff*w}%;top:0;bottom:0;right:0;background:#fee2e2;border-radius:0 4px 4px 0"></div>
+        <div title="Cutoff" style="position:absolute;left:${cutoff*w}%;top:-2px;bottom:-2px;width:2px;background:#334155"></div>
+        <div title="Probability" style="position:absolute;left:${p*w}%;top:-4px;bottom:-4px;width:3px;background:#4338ca"></div>
+    ` }),
+    el("div", { class: "flex justify-between text-xs text-slate-600" },
+      el("span", {}, `Default probability: ${(p*100).toFixed(1)}%`),
+      el("span", {}, `Cutoff: ${(cutoff*100).toFixed(1)}%`)
+    ),
+    el("p", { class: "text-sm text-slate-700" }, risk.narrative)
+  );
+}
+
+function complianceBlock(compliance) {
+  if (!compliance) return el("div", { class: "text-sm text-slate-500" }, "Compliance check did not run.");
+  const wrap = el("div", { class: "space-y-3" });
+  if (compliance.insufficient_data) {
+    wrap.appendChild(el("div", { class: "text-sm bg-amber-50 border border-amber-300 text-amber-900 rounded px-3 py-2" },
+      "Couldn't verify compliance fully -- treated as unresolved, never as a clean pass."));
+  }
+  const breaches = compliance.flags.filter((f) => f.severity === "BREACH");
+  const advisories = compliance.flags.filter((f) => f.severity === "ADVISORY");
+  [...breaches, ...advisories].forEach((f) => {
+    const sevClass = f.severity === "BREACH" ? "border-red-300 bg-red-50" : "border-slate-200 bg-white";
+    const citation = f.citations[0];
+    wrap.appendChild(el(
+      "div", { class: `border rounded-lg px-3 py-2 ${sevClass}` },
+      el("div", { class: "flex items-center gap-2 mb-1" },
+        el("span", { class: "font-semibold text-sm" }, f.rule_id),
+        el("span", { class: "text-xs uppercase font-medium " + (f.severity === "BREACH" ? "text-red-700" : "text-slate-500") }, f.severity),
+        originBadge(f.origin)
+      ),
+      el("p", { class: "text-sm mb-1" }, f.summary),
+      citation ? el("a", { href: `regulations.html?number=${encodeURIComponent(citation.regulation_number)}`,
+                          class: "text-xs text-indigo-600 hover:underline" },
+                     `View ${citation.regulation_number}: ${citation.clause_title}`) : null
+    ));
+  });
+  if (compliance.flags.length === 0 && !compliance.insufficient_data) {
+    wrap.appendChild(el("div", { class: "text-sm text-emerald-700" }, "No compliance flags raised."));
+  }
+  return wrap;
+}
+
+function parsedPanel(parsed) {
+  if (!parsed) return el("div", { class: "text-sm text-slate-500" }, "Parsed data unavailable.");
+  const rows = el("div", { class: "divide-y divide-slate-100" });
+  Object.entries(parsed.fields).forEach(([k, v]) => {
+    rows.appendChild(el("div", { class: "flex items-center justify-between py-1.5 text-sm" },
+      el("span", { class: "text-slate-600" }, k),
+      el("div", { class: "flex items-center gap-2" },
+        el("span", { class: "font-mono" }, String(v)),
+        sourceBadge(parsed.field_sources[k])
+      )
+    ));
+  });
+  parsed.unresolved_fields.forEach((k) => {
+    rows.appendChild(el("div", { class: "flex items-center justify-between py-1.5 text-sm" },
+      el("span", { class: "text-slate-600" }, k),
+      el("div", {}, el("span", { class: "font-mono text-slate-400" }, "—"), " ", unresolvedBadge())
+    ));
+  });
+  const wrap = el("div", {}, rows);
+  if (parsed.note_insights) {
+    const ni = parsed.note_insights;
+    wrap.appendChild(el("div", { class: "mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2" },
+      el("div", { class: "text-xs font-semibold text-slate-500 mb-1" }, "Officer's note"),
+      el("p", { class: "text-sm mb-1" }, ni.summary_english || "(no summary)"),
+      el("p", { class: "text-xs text-slate-500" },
+        `Seasonality: ${ni.seasonality ? "yes" : "no"}` + (ni.seasonal_peak ? `, peak: ${ni.seasonal_peak}` : ""))
+    ));
+  }
+  return wrap;
+}
+
+function asReceivedPanel(doc) {
+  if (!doc) return el("div", { class: "text-sm text-slate-500" }, "No uploaded document on file -- underwritten from the applicant's own record.");
+  const rows = el("div", { class: "divide-y divide-slate-100 font-mono text-sm" });
+  Object.entries(doc.raw_fields).forEach(([k, v]) => {
+    rows.appendChild(el("div", { class: "flex justify-between py-1.5" },
+      el("span", { class: "text-slate-500" }, k),
+      el("span", {}, v === null ? "null" : String(v))
+    ));
+  });
+  const wrap = el("div", {}, rows);
+  if (doc.notes) {
+    wrap.appendChild(el("div", { class: "mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm italic" }, `"${doc.notes}"`));
+  }
+  return wrap;
+}
+
+function inferStageStatesFromDecision(decision) {
+  // Used for stored decisions (no live SSE trace was captured) -- reconstructed from
+  // what the decision object itself proves did or didn't happen, never assumed
+  // complete. A missing `risk`/`compliance` means that stage genuinely did not
+  // finish (pipeline.py only calls compliance.check() when risk is not None), not
+  // that this page failed to load its data.
+  const states = {};
+  states.analyze = { state: "complete", meta: { summary: "Application read" } };
+  states.score = decision.risk
+    ? { state: "complete", meta: { summary: stageSummary("score", { default_probability: decision.risk.default_probability }) } }
+    : { state: "failed", meta: { summary: "Did not complete -- ML service unavailable or data incomplete" } };
+  states.check = decision.compliance
+    ? { state: "complete", meta: { summary: stageSummary("check", {
+        breach_count: decision.compliance.flags.filter((f) => f.severity === "BREACH").length,
+        advisory_count: decision.compliance.flags.filter((f) => f.severity === "ADVISORY").length,
+      }) } }
+    : { state: "pending", meta: { summary: "Skipped -- risk score unavailable" } };
+  states.decide = { state: "complete", meta: { summary: stageSummary("decide", { decision: decision.decision }) } };
+  return states;
+}
+
+function renderDecision(decision, stageStates) {
+  const content = document.getElementById("content");
+  content.innerHTML = "";
+
+  const left = el("div", { class: "space-y-4" },
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4" },
+      el("h2", { class: "font-semibold mb-2" }, "As received"),
+      asReceivedPanel(rawDocument)
+    ),
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4" },
+      el("h2", { class: "font-semibold mb-2" }, "As understood"),
+      parsedPanel(decision.parsed)
+    )
+  );
+
+  const center = el("div", { class: "space-y-4" });
+  const traceBox = el("div", { class: "space-y-2" });
+  center.appendChild(el("div", { class: "bg-white border border-slate-200 rounded-lg p-4" },
+    el("h2", { class: "font-semibold mb-2" }, "Agent trace"),
+    traceBox
+  ));
+  renderTrace(traceBox, stageStates || inferStageStatesFromDecision(decision));
+
+  const right = el("div", { class: "space-y-4" },
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4 text-center" },
+      verdictBadge(decision.decision, { big: true }),
+      el("p", { class: "mt-3 text-sm text-slate-700" }, decision.rationale),
+      decision.approved_amount_pkr != null
+        ? el("p", { class: "mt-2 font-semibold" }, `Approved: ${fmtPKR(decision.approved_amount_pkr)}`)
+        : null,
+      decision.escalation_reasons.length
+        ? el("ul", { class: "mt-3 text-left text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 list-disc list-inside" },
+            ...decision.escalation_reasons.map((r) => el("li", {}, r)))
+        : null
+    ),
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4" },
+      el("h2", { class: "font-semibold mb-2" }, "Risk"),
+      riskGauge(decision.risk)
+    ),
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4" },
+      el("h2", { class: "font-semibold mb-2" }, "Compliance"),
+      complianceBlock(decision.compliance)
+    ),
+    decisionIdParam ? el("div", { class: "bg-white border border-slate-200 rounded-lg p-4 flex gap-2" },
+      el("button", { id: "accept-btn", class: "flex-1 bg-emerald-600 text-white text-sm font-medium py-2 rounded-lg" }, "Accept recommendation"),
+      el("button", { id: "override-btn", class: "flex-1 bg-slate-200 text-slate-800 text-sm font-medium py-2 rounded-lg" }, "Override")
+    ) : null
+  );
+
+  content.appendChild(left);
+  content.appendChild(center);
+  content.appendChild(right);
+
+  if (decisionIdParam) wireActions(decisionIdParam);
+}
+
+function wireActions(decisionId) {
+  document.getElementById("accept-btn").addEventListener("click", async () => {
+    if (!confirm("Accept this recommendation as-is?")) return;
+    try {
+      await fetchJSON(`/api/decisions/${encodeURIComponent(decisionId)}/accept`, { method: "POST" });
+      alert("Accepted and recorded in the audit trail.");
+    } catch (err) {
+      alert("Could not record acceptance: " + err.message);
+    }
+  });
+  document.getElementById("override-btn").addEventListener("click", async () => {
+    const reason = prompt("Reason for override (at least 10 characters):");
+    if (reason === null) return;
+    if (reason.trim().length < 10) { alert("Reason must be at least 10 characters."); return; }
+    try {
+      await fetchJSON(`/api/decisions/${encodeURIComponent(decisionId)}/override`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
+      });
+      alert("Override recorded in the audit trail.");
+    } catch (err) {
+      alert("Could not record override: " + err.message);
+    }
+  });
+}
+
+async function loadRawDocument(id) {
+  try {
+    const applicant = await fetchJSON(`/api/applicants/${encodeURIComponent(id)}`);
+    rawDocument = applicant.raw_document;
+  } catch (err) {
+    rawDocument = null; // fine -- e.g. applicant exists only via fixture, not yet seeded
+  }
+}
+
+async function runLive() {
+  document.getElementById("page-title").textContent = `Application Review — ${applicantIdParam}`;
+
+  // A new applicant from the PDF intake flow (new-application.html) hands its assembled
+  // raw_fields/notes/etc. through sessionStorage -- a per-viewer, one-shot handoff, not
+  // shared state -- rather than an applicant_id the server can look up itself.
+  let sessionApplication = null;
+  if (isSessionSource) {
+    try {
+      sessionApplication = JSON.parse(sessionStorage.getItem("cs_new_application") || "null");
+    } catch (e) {
+      sessionApplication = null;
+    }
+  }
+
+  if (sessionApplication) {
+    document.getElementById("page-subtitle").textContent = "Running the four agents live on a new applicant...";
+    rawDocument = { raw_fields: sessionApplication.raw_fields, notes: sessionApplication.notes };
+  } else {
+    document.getElementById("page-subtitle").textContent = "Running the four agents live...";
+    await loadRawDocument(applicantIdParam);
+  }
+
+  const content = document.getElementById("content");
+  content.innerHTML = "";
+  const center = el("div", { class: "lg:col-span-3" },
+    el("div", { class: "bg-white border border-slate-200 rounded-lg p-4 max-w-xl mx-auto" },
+      el("h2", { class: "font-semibold mb-3" }, "Agent trace"),
+      el("div", { id: "live-trace", class: "space-y-2" })
+    )
+  );
+  content.appendChild(center);
+
+  const stageStates = {};
+  STAGES.forEach((s) => stageStates[s.key] = { state: "pending", meta: {} });
+  stageStates.analyze.state = "running";
+  renderTrace(document.getElementById("live-trace"), stageStates);
+
+  const qsParams = { applicant_id: applicantIdParam };
+  if (sessionApplication) {
+    qsParams.raw_fields = JSON.stringify(sessionApplication.raw_fields || {});
+    if (sessionApplication.notes) qsParams.notes = sessionApplication.notes;
+    if (sessionApplication.requested_amount_pkr != null) qsParams.requested_amount_pkr = sessionApplication.requested_amount_pkr;
+    if (sessionApplication.is_clean_facility) qsParams.is_clean_facility = "true";
+    if (sessionApplication.tenor_months != null) qsParams.tenor_months = sessionApplication.tenor_months;
+  }
+  const qs = new URLSearchParams(qsParams);
+  const source = new EventSource(`/applications/underwrite/stream?${qs.toString()}`);
+
+  // A stage.completed event means the pipeline *reached* that stage, not that it
+  // succeeded -- e.g. "score" still fires with default_probability: null when the ML
+  // service is down, and "check" still fires with breach_count: 0 when it never ran
+  // at all (pipeline.py skips compliance.check() entirely once risk is None). Track
+  // that here so the live trace shows a failed/skipped stage honestly as it happens,
+  // not as a false green tick.
+  let scoreFailed = false;
+
+  source.addEventListener("stage.completed", (ev) => {
+    const data = JSON.parse(ev.data);
+    let state = "complete";
+    if (data.stage === "score" && data.default_probability === null) {
+      state = "failed";
+      scoreFailed = true;
+    } else if (data.stage === "check" && scoreFailed) {
+      state = "pending";
+    }
+    stageStates[data.stage] = {
+      state,
+      meta: { duration_ms: data.duration_ms, summary: state === "pending" ? "Skipped -- risk score unavailable" : stageSummary(data.stage, data) },
+    };
+    const nextIdx = STAGES.findIndex((s) => s.key === data.stage) + 1;
+    if (nextIdx < STAGES.length && stageStates[STAGES[nextIdx].key].state === "pending") {
+      stageStates[STAGES[nextIdx].key].state = "running";
+    }
+    renderTrace(document.getElementById("live-trace"), stageStates);
+  });
+
+  source.addEventListener("underwriting.decided", (ev) => {
+    source.close();
+    const decision = JSON.parse(ev.data);
+    document.getElementById("page-subtitle").textContent = "Run complete.";
+    // The live-tracked states already reflect what actually happened; just carry
+    // their real durations into the final render instead of re-deriving from scratch.
+    renderDecision(decision, stageStates);
+  });
+
+  source.addEventListener("error", (ev) => {
+    source.close();
+    let detail = "The run failed or the connection was interrupted.";
+    try { detail = JSON.parse(ev.data).detail || detail; } catch (e) {}
+    document.getElementById("content").innerHTML = "";
+    document.getElementById("content").appendChild(errorState(detail));
+  });
+}
+
+async function loadStored() {
+  document.getElementById("page-title").textContent = "Application Review";
+  document.getElementById("page-subtitle").textContent = "Stored decision (not re-run).";
+  const content = document.getElementById("content");
+  content.appendChild(skeleton(6));
+  try {
+    const row = await fetchJSON(`/api/decisions/${encodeURIComponent(decisionIdParam)}`);
+    applicantId = row.applicant_id;
+    document.getElementById("page-title").textContent = `Application Review — ${applicantId}`;
+    await loadRawDocument(applicantId);
+    renderDecision(row.payload);
+  } catch (err) {
+    content.innerHTML = "";
+    content.appendChild(errorState(err.message));
+  }
+}
+
+if (shouldRun && applicantIdParam) {
+  runLive();
+} else if (decisionIdParam) {
+  loadStored();
+} else {
+  document.getElementById("content").appendChild(CS.errorState("No application specified. Go back to the Work Queue and pick or search for one."));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CreditSense — Audit Trail</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+  <span class="font-bold text-lg">CreditSense</span>
+  <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">Work Queue</a>
+  <a href="regulations.html" class="text-sm text-slate-500 hover:text-slate-900">Regulations</a>
+  <a href="portfolio.html" class="text-sm text-slate-500 hover:text-slate-900">Portfolio</a>
+  <a href="audit.html" class="text-sm font-medium text-slate-900">Audit Trail</a>
+</nav>
+
+<main class="max-w-5xl mx-auto px-6 py-8">
+  <h1 class="text-2xl font-bold mb-1">Audit Trail</h1>
+  <p class="text-slate-500 text-sm mb-6">
+    Every automated decision, plus every human accept/override, is reconstructible
+    after the fact. Nothing here mutates a prior row -- overrides and acceptances are
+    appended, never in-place edits.
+  </p>
+  <div id="content"></div>
+</main>
+
+<script>
+const { el, fetchJSON, skeleton, emptyState, errorState, fmtDate } = CS;
+
+const ACTION_LABEL = {
+  underwriting_decision: "Underwriting decision",
+  decision_accepted: "Accepted by officer",
+  decision_overridden: "Overridden by officer",
+};
+
+function actionBadge(action) {
+  const classes = {
+    underwriting_decision: "bg-slate-100 text-slate-700",
+    decision_accepted: "bg-emerald-100 text-emerald-800",
+    decision_overridden: "bg-amber-100 text-amber-900",
+  }[action] || "bg-slate-100 text-slate-700";
+  return el("span", { class: `text-xs px-2 py-0.5 rounded font-medium ${classes}` }, ACTION_LABEL[action] || action);
+}
+
+async function load() {
+  const content = document.getElementById("content");
+  content.appendChild(skeleton(8));
+  try {
+    const rows = await fetchJSON("/api/decisions?limit=200");
+    content.innerHTML = "";
+    if (rows.length === 0) {
+      content.appendChild(emptyState("No audit history yet."));
+      return;
+    }
+    const table = el("div", { class: "divide-y divide-slate-200 bg-white border border-slate-200 rounded-lg overflow-hidden" });
+    rows.forEach((r) => {
+      const payloadEl = el("pre", { class: "payload hidden mt-2 text-xs bg-slate-50 border border-slate-200 rounded p-3 overflow-x-auto" }, "");
+      let loaded = false;
+      const row = el("div", { class: "px-4 py-3" },
+        el("div", { class: "flex items-center justify-between cursor-pointer" , onclick: async () => {
+            payloadEl.classList.toggle("hidden");
+            if (!loaded && !payloadEl.classList.contains("hidden")) {
+              loaded = true;
+              try {
+                const detail = await fetchJSON(`/api/decisions/${encodeURIComponent(r.id)}`);
+                payloadEl.textContent = JSON.stringify(detail, null, 2);
+              } catch (err) {
+                payloadEl.textContent = "Could not load: " + err.message;
+              }
+            }
+          } },
+          el("div", { class: "flex items-center gap-3" },
+            actionBadge(r.action),
+            el("span", { class: "font-medium" }, r.applicant_id || "—"),
+            el("span", { class: "text-sm text-slate-500" }, r.status)
+          ),
+          el("span", { class: "text-sm text-slate-400" }, fmtDate(r.created_at))
+        ),
+        payloadEl
+      );
+      table.appendChild(row);
+    });
+    content.appendChild(table);
+  } catch (err) {
+    content.innerHTML = "";
+    content.appendChild(errorState(err.message));
+  }
+}
+
+load();
+</script>
+</body>
+</html>

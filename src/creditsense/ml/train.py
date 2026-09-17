@@ -1,0 +1,431 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    confusion_matrix,
+    explained_variance_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    median_absolute_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import (
+    RandomizedSearchCV,
+    StratifiedKFold,
+    train_test_split,
+)
+from xgboost import XGBClassifier
+
+from creditsense.data.generators.portfolio import LABEL_FLIP_RATE
+from creditsense.ml.features import (
+    TARGET_1,
+    TARGET_2,
+    Stage1Preprocessor,
+    build_monotone_constraints,
+    build_stage2_features,
+)
+from creditsense.ml.models import (
+    RANDOM_STATE,
+    CreditSenseBundle,
+    build_stage2_regressor,
+)
+
+DEFAULT_CSV_PATH = Path("src/creditsense/data/raw/creditsense_synthetic_portfolio.csv")
+DEFAULT_OUTPUT_PATH = Path("src/creditsense/ml/artifacts/creditsense_bundle.joblib")
+
+
+def tune_stage1(
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    n_iter: int = 25,
+    cv_folds: int = 5,
+) -> tuple[dict[str, Any], float]:
+    scale_pos_weight = float((y_train == 0).sum() / (y_train == 1).sum())
+    base_model = XGBClassifier(
+        scale_pos_weight=scale_pos_weight,
+        eval_metric="aucpr",
+        enable_categorical=True,
+        tree_method="hist",
+        monotone_constraints=build_monotone_constraints(list(x_train.columns)),
+        random_state=RANDOM_STATE,
+    )
+    search = RandomizedSearchCV(
+        base_model,
+        {
+            "max_depth": [3, 4, 5],
+            "learning_rate": [0.01, 0.03, 0.05, 0.1],
+            "n_estimators": [200, 300, 400, 600],
+            "min_child_weight": [1, 3, 5, 10],
+            "subsample": [0.7, 0.8, 0.9, 1.0],
+            "colsample_bytree": [0.7, 0.8, 0.9, 1.0],
+        },
+        n_iter=n_iter,
+        scoring="average_precision",
+        cv=StratifiedKFold(cv_folds, shuffle=True, random_state=RANDOM_STATE),
+        random_state=RANDOM_STATE,
+        n_jobs=-1,
+    )
+    search.fit(x_train, y_train)
+    return search.best_params_, scale_pos_weight
+
+
+def fit_stage1_calibrated(
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    best_params: dict[str, Any],
+    scale_pos_weight: float,
+) -> CalibratedClassifierCV:
+    x_core, x_calib, y_core, y_calib = train_test_split(
+        x_train, y_train, test_size=0.2, stratify=y_train, random_state=RANDOM_STATE
+    )
+    model = XGBClassifier(
+        **best_params,
+        scale_pos_weight=scale_pos_weight,
+        eval_metric="aucpr",
+        enable_categorical=True,
+        tree_method="hist",
+        monotone_constraints=build_monotone_constraints(list(x_train.columns)),
+        random_state=RANDOM_STATE,
+    )
+    model.fit(x_core, y_core)
+    calibrated = CalibratedClassifierCV(FrozenEstimator(model), method="sigmoid")
+    calibrated.fit(x_calib, y_calib)
+    return calibrated
+
+
+def recommend_threshold(y_true: pd.Series, probabilities: np.ndarray) -> tuple[float, float]:
+    """KS-maximizing cutoff — kept for comparison in the trade-off table (fix 3-B).
+
+    This rule only maximises statistical separation between defaulters and
+    non-defaulters; it has no idea that declining a good applicant and approving a bad
+    one cost different amounts, and on this dataset it ends up declining far more
+    applicants than actually default. It is not used to pick the cutoff shipped in the
+    bundle any more — see `select_cutoff_matching_default_rate`.
+    """
+    order = np.argsort(probabilities)
+    actual = np.asarray(y_true)[order]
+    scores = probabilities[order]
+    bad_total = max((actual == 1).sum(), 1)
+    good_total = max((actual == 0).sum(), 1)
+    separation = np.abs(
+        np.cumsum(actual == 1) / bad_total - np.cumsum(actual == 0) / good_total
+    )
+    index = int(np.argmax(separation))
+    return float(scores[index]), float(separation[index])
+
+
+def select_cutoff_matching_default_rate(
+    y_true: pd.Series, probabilities: np.ndarray
+) -> tuple[float, float]:
+    """Fix 3-B: pick the cutoff by a stated, neutral rule instead of an invented cost
+    ratio — the cutoff whose decline rate matches the observed default rate. This does
+    not claim to know what a missed default or a lost good customer actually costs; it
+    only asks the model to decline roughly as often as applicants actually default,
+    which is a large improvement over the KS cutoff's 26.7% decline rate against a 10.2%
+    default rate. Returns (cutoff, target_decline_rate).
+    """
+    target_decline_rate = float(np.asarray(y_true).mean())
+    cutoff = float(np.quantile(probabilities, 1.0 - target_decline_rate))
+    return cutoff, target_decline_rate
+
+
+def build_cutoff_trade_off_table(
+    y_true: pd.Series, probabilities: np.ndarray, n_points: int = 19
+) -> list[dict[str, float]]:
+    """Fix 3-B: instead of silently picking one cutoff, save the whole trade-off — for
+    a spread of candidate cutoffs, how many applicants get declined and how that cutoff's
+    precision/recall on defaulters looks. Lets a lender pick a different point later
+    without retraining, and makes today's choice checkable rather than opaque.
+    """
+    quantile_points = np.linspace(0.05, 0.95, n_points)
+    candidates = sorted(set(np.round(np.quantile(probabilities, quantile_points), 6)))
+    rows = []
+    for cutoff in candidates:
+        predictions = (probabilities >= cutoff).astype(int)
+        rows.append(
+            {
+                "cutoff": float(cutoff),
+                "decline_rate": float(predictions.mean()),
+                "precision_default": float(
+                    precision_score(y_true, predictions, pos_label=1, zero_division=0)
+                ),
+                "recall_default": float(
+                    recall_score(y_true, predictions, pos_label=1, zero_division=0)
+                ),
+            }
+        )
+    return rows
+
+
+def generate_oof_calibrated_pd(
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+    best_params: dict[str, Any],
+    scale_pos_weight: float,
+    n_splits: int = 5,
+) -> np.ndarray:
+    """Generate calibrated, out-of-fold Stage 1 probabilities for Stage 2.
+
+    Every row is scored by a calibrated model that was not trained on that row.
+    This keeps Stage 2's training input on the same probability scale it receives
+    when the API scores a new applicant.
+    """
+    out_of_fold = np.zeros(len(x_train), dtype=float)
+    folds = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
+
+    for fit_indices, holdout_indices in folds.split(x_train, y_train):
+        x_fit = x_train.iloc[fit_indices]
+        y_fit = y_train.iloc[fit_indices]
+        x_holdout = x_train.iloc[holdout_indices]
+        calibrated_fold = fit_stage1_calibrated(
+            x_fit,
+            y_fit,
+            best_params,
+            scale_pos_weight,
+        )
+        out_of_fold[holdout_indices] = calibrated_fold.predict_proba(x_holdout)[:, 1]
+
+    return out_of_fold
+
+
+def train_bundle(
+    frame: pd.DataFrame,
+    best_params: dict[str, Any] | None = None,
+    tuning_iterations: int = 25,
+    cv_folds: int = 5,
+) -> tuple[CreditSenseBundle, dict[str, Any]]:
+    # Fix 3-A: three-way split instead of two. `test_frame` is touched exactly once,
+    # at the very end, purely to report final numbers. The cutoff is chosen on
+    # `cutoff_frame`, a slice the model never trains or calibrates on either — using
+    # `test_frame` for that (the previous behaviour) let the reported precision/recall
+    # cherry-pick a threshold against the same rows they were then measured on.
+    train_full_frame, test_frame = train_test_split(
+        frame, test_size=0.2, stratify=frame[TARGET_1], random_state=RANDOM_STATE
+    )
+    train_frame, cutoff_frame = train_test_split(
+        train_full_frame,
+        test_size=0.25,  # 0.25 of the remaining 80% = 20% of the full dataset
+        stratify=train_full_frame[TARGET_1],
+        random_state=RANDOM_STATE,
+    )
+
+    preprocessor = Stage1Preprocessor()
+    x_train_1 = preprocessor.fit_transform(train_frame)
+    x_cutoff_1 = preprocessor.transform(cutoff_frame)
+    x_test_1 = preprocessor.transform(test_frame)
+    y_train_1 = train_frame[TARGET_1]
+    y_cutoff_1 = cutoff_frame[TARGET_1]
+    y_test_1 = test_frame[TARGET_1]
+
+    if best_params is None:
+        best_params, scale_weight = tune_stage1(
+            x_train_1, y_train_1, tuning_iterations, cv_folds
+        )
+    else:
+        scale_weight = float((y_train_1 == 0).sum() / (y_train_1 == 1).sum())
+
+    stage1_model = fit_stage1_calibrated(
+        x_train_1, y_train_1, best_params, scale_weight
+    )
+    cutoff_pd = stage1_model.predict_proba(x_cutoff_1)[:, 1]
+    test_pd = stage1_model.predict_proba(x_test_1)[:, 1]
+
+    # Fix 3-B: the shipped cutoff is chosen by a stated neutral rule (decline rate
+    # matches the observed default rate) on the untouched cutoff slice, not by
+    # maximising KS separation on the test slice. The KS cutoff is kept only as one
+    # row in the trade-off table below, for comparison.
+    threshold, target_decline_rate = select_cutoff_matching_default_rate(
+        y_cutoff_1, cutoff_pd
+    )
+    ks_threshold, ks_score = recommend_threshold(y_cutoff_1, cutoff_pd)
+    cutoff_trade_off_table = build_cutoff_trade_off_table(y_cutoff_1, cutoff_pd)
+
+    train_oof_pd = generate_oof_calibrated_pd(
+        x_train_1,
+        y_train_1,
+        best_params,
+        scale_weight,
+    )
+    x_train_2, tier_encoder = build_stage2_features(
+        x_train_1, train_frame, train_oof_pd, fit_encoder=True
+    )
+    x_test_2, _ = build_stage2_features(
+        x_test_1, test_frame, test_pd, tier_encoder
+    )
+    stage2_model = build_stage2_regressor(list(x_train_2.columns))
+    stage2_model.fit(x_train_2, train_frame[TARGET_2])
+    stage2_predictions = stage2_model.predict(x_test_2)
+
+    threshold_predictions = (test_pd >= threshold).astype(int)
+    threshold_matrix = confusion_matrix(y_test_1, threshold_predictions, labels=[0, 1])
+    stage2_actual = test_frame[TARGET_2].to_numpy()
+    stage2_errors = stage2_predictions - stage2_actual
+
+    # Fix 3-E: the credit limit target is a near-deterministic formula (turnover x
+    # collateral/risk multipliers, then capped), so a high R^2 mostly reflects the
+    # model re-deriving that arithmetic rather than learning underwriting judgement.
+    # The honest number is the rupee error, especially on the rare rows where an SBP
+    # cap actually bound — those are the only genuinely hard cases.
+    cap_hit_mask = (
+        (test_frame["credit_limit_hit_obligor_cap"].to_numpy() == 1)
+        | (test_frame["credit_limit_hit_group_cap"].to_numpy() == 1)
+    )
+    mean_actual_pkr = float(stage2_actual.mean())
+    mae_pkr = float(mean_absolute_error(stage2_actual, stage2_predictions))
+
+    # Fix 3-C: record how good ANY model could be on this label, not just how good
+    # ours is. The generator flips LABEL_FLIP_RATE of labels after drawing them from
+    # `risk_index_score`, so no classifier can beat what that hidden score itself
+    # achieves against the (noisy) realized label. This is computed on the full
+    # dataset because it is a property of the label-generating process, not a fitted
+    # model — there is nothing to overfit.
+    ceiling_roc_auc = float(roc_auc_score(frame[TARGET_1], frame["risk_index_score"]))
+    ceiling_pr_auc = float(
+        average_precision_score(frame[TARGET_1], frame["risk_index_score"])
+    )
+
+    bundle = CreditSenseBundle(
+        preprocessor,
+        stage1_model,
+        threshold,
+        tier_encoder,
+        stage2_model,
+        metadata={
+            "stage2_columns": list(x_train_2.columns),
+            "cutoff_rule": "decline_rate_matches_observed_default_rate",
+            "ks_score": ks_score,
+        },
+    )
+    metrics: dict[str, Any] = {
+        "training_rows": int(len(train_frame)),
+        "cutoff_selection_rows": int(len(cutoff_frame)),
+        "test_rows": int(len(test_frame)),
+        "stage1": {
+            "threshold": threshold,
+            "threshold_rule": (
+                "cutoff whose decline rate on the cutoff-selection slice matches the "
+                "observed default rate (fix 3-B) — chosen without assuming a cost "
+                "ratio between a missed default and a lost good customer"
+            ),
+            "threshold_selection_rows": "cutoff_frame (20% of data, held out from "
+            "training and calibration, never touched by test-set metrics below)",
+            "target_decline_rate": target_decline_rate,
+            "ks_threshold": ks_threshold,
+            "ks_score": ks_score,
+            "cutoff_trade_off_table": cutoff_trade_off_table,
+            "ceiling_roc_auc": ceiling_roc_auc,
+            "ceiling_pr_auc": ceiling_pr_auc,
+            "label_flip_rate": LABEL_FLIP_RATE,
+            "ceiling_note": (
+                "roc_auc/pr_auc above are bounded by ceiling_roc_auc/ceiling_pr_auc: "
+                "the data generator flips label_flip_rate of labels after drawing them, "
+                "so no model can score better than the hidden risk_index_score does "
+                "against the resulting noisy label"
+            ),
+            "pr_auc": float(average_precision_score(y_test_1, test_pd)),
+            "roc_auc": float(roc_auc_score(y_test_1, test_pd)),
+            "brier_score": float(brier_score_loss(y_test_1, test_pd)),
+            "positive_rate": float(y_test_1.mean()),
+            "predicted_positive_rate": float(threshold_predictions.mean()),
+            "precision_default": float(
+                precision_score(y_test_1, threshold_predictions, pos_label=1, zero_division=0)
+            ),
+            "recall_default": float(
+                recall_score(y_test_1, threshold_predictions, pos_label=1, zero_division=0)
+            ),
+            "f1_default": float(
+                f1_score(y_test_1, threshold_predictions, pos_label=1, zero_division=0)
+            ),
+            "precision_non_default": float(
+                precision_score(y_test_1, threshold_predictions, pos_label=0, zero_division=0)
+            ),
+            "recall_non_default": float(
+                recall_score(y_test_1, threshold_predictions, pos_label=0, zero_division=0)
+            ),
+            "confusion_matrix_labels": ["non_default", "default"],
+            "confusion_matrix": threshold_matrix.tolist(),
+        },
+        "stage2": {
+            "r2": float(r2_score(stage2_actual, stage2_predictions)),
+            "r2_note": (
+                "recommend_credit_limit_pkr is a near-deterministic formula of "
+                "turnover, collateral and risk (see the generator), so a high R^2 "
+                "mostly reflects re-deriving that arithmetic, not underwriting skill — "
+                "read mae_pct_of_mean_actual and the cap-hit breakdown instead"
+            ),
+            "explained_variance": float(
+                explained_variance_score(stage2_actual, stage2_predictions)
+            ),
+            "mae_pkr": mae_pkr,
+            "mae_pct_of_mean_actual": float(mae_pkr / mean_actual_pkr * 100)
+            if mean_actual_pkr
+            else None,
+            "rmse_pkr": float(mean_squared_error(stage2_actual, stage2_predictions) ** 0.5),
+            "median_absolute_error_pkr": float(
+                median_absolute_error(stage2_actual, stage2_predictions)
+            ),
+            "mean_actual_pkr": mean_actual_pkr,
+            "mean_predicted_pkr": float(stage2_predictions.mean()),
+            "mean_error_pkr": float(stage2_errors.mean()),
+            "cap_hit_rows": int(cap_hit_mask.sum()),
+            "mae_pkr_cap_hit_rows": float(
+                mean_absolute_error(
+                    stage2_actual[cap_hit_mask], stage2_predictions[cap_hit_mask]
+                )
+            )
+            if cap_hit_mask.any()
+            else None,
+            "mae_pkr_non_cap_rows": float(
+                mean_absolute_error(
+                    stage2_actual[~cap_hit_mask], stage2_predictions[~cap_hit_mask]
+                )
+            )
+            if (~cap_hit_mask).any()
+            else None,
+        },
+    }
+    bundle.metadata.update(
+        {
+            "best_params": best_params,
+            "scale_pos_weight": scale_weight,
+            "metrics": metrics,
+        }
+    )
+    return bundle, metrics
+
+
+def main(
+    csv_path: str | Path = DEFAULT_CSV_PATH,
+    tuning_iterations: int = 25,
+    cv_folds: int = 5,
+    output_path: str | Path = DEFAULT_OUTPUT_PATH,
+) -> CreditSenseBundle:
+    """Train the complete two-stage model and save the API bundle."""
+    frame = pd.read_csv(csv_path)
+    bundle, metrics = train_bundle(
+        frame,
+        tuning_iterations=tuning_iterations,
+        cv_folds=cv_folds,
+    )
+    bundle.save(output_path)
+    Path(output_path).with_suffix(".metrics.json").write_text(
+        json.dumps(metrics, indent=2), encoding="utf-8"
+    )
+    return bundle
+
+
+if __name__ == "__main__":
+    main()

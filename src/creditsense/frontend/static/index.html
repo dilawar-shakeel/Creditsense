@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CreditSense — Work Queue</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+  <span class="font-bold text-lg">CreditSense</span>
+  <a href="index.html" class="text-sm font-medium text-slate-900">Work Queue</a>
+  <a href="regulations.html" class="text-sm text-slate-500 hover:text-slate-900">Regulations</a>
+  <a href="portfolio.html" class="text-sm text-slate-500 hover:text-slate-900">Portfolio</a>
+  <a href="audit.html" class="text-sm text-slate-500 hover:text-slate-900">Audit Trail</a>
+</nav>
+
+<main class="max-w-5xl mx-auto px-6 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Work Queue</h1>
+    <div class="flex gap-2">
+      <input id="search-box" type="text" placeholder="Search applicant ID or sector..."
+             class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-64" />
+      <button id="search-btn" class="bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg">Find / run</button>
+      <a href="new-application.html"
+         class="border border-slate-300 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50">
+        + New applicant
+      </a>
+    </div>
+  </div>
+
+  <div id="search-results" class="mb-6"></div>
+
+  <div class="flex gap-1 mb-4 border-b border-slate-200">
+    <button data-tab="escalated" class="tab-btn px-4 py-2 text-sm font-medium border-b-2">
+      Needs You <span id="needs-you-count" class="ml-1 inline-flex items-center justify-center text-xs bg-amber-500 text-white rounded-full w-5 h-5"></span>
+    </button>
+    <button data-tab="decided" class="tab-btn px-4 py-2 text-sm font-medium border-b-2">Recently Decided</button>
+    <button data-tab="all" class="tab-btn px-4 py-2 text-sm font-medium border-b-2">All Applications</button>
+  </div>
+
+  <div id="queue-list"></div>
+</main>
+
+<script>
+const { el, fetchJSON, skeleton, emptyState, errorState, verdictBadge, fmtPKR, fmtDate } = CS;
+
+let activeTab = "escalated";
+
+function setActiveTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    const on = btn.dataset.tab === tab;
+    btn.className = "tab-btn px-4 py-2 text-sm font-medium border-b-2 " +
+      (on ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-900");
+  });
+  loadQueue();
+}
+
+function statusForTab(tab) {
+  if (tab === "escalated") return "escalated";
+  if (tab === "decided") return null; // filtered client-side to success/failed below
+  return null;
+}
+
+async function loadQueue() {
+  const listEl = document.getElementById("queue-list");
+  listEl.innerHTML = "";
+  listEl.appendChild(skeleton(5));
+  try {
+    const status = statusForTab(activeTab);
+    const url = "/api/decisions?limit=100" + (status ? `&status=${status}` : "");
+    let rows = await fetchJSON(url);
+    if (activeTab === "decided") {
+      rows = rows.filter((r) => r.status === "success" && r.action === "underwriting_decision");
+    }
+    if (activeTab === "escalated") {
+      const badge = document.getElementById("needs-you-count");
+      badge.textContent = rows.length;
+      badge.classList.toggle("hidden", rows.length === 0);
+    }
+    listEl.innerHTML = "";
+    if (rows.length === 0) {
+      listEl.appendChild(emptyState(
+        activeTab === "escalated" ? "Nothing needs your attention." : "No applications in this view yet."
+      ));
+      return;
+    }
+    const table = el("div", { class: "divide-y divide-slate-200 bg-white border border-slate-200 rounded-lg overflow-hidden" });
+    rows.forEach((r) => table.appendChild(renderRow(r)));
+    listEl.appendChild(table);
+  } catch (err) {
+    listEl.innerHTML = "";
+    listEl.appendChild(errorState(err.message));
+  }
+}
+
+function renderRow(r) {
+  const href = `review.html?id=${encodeURIComponent(r.id)}`;
+  return el(
+    "a",
+    { href, class: "flex items-center justify-between px-4 py-3 hover:bg-slate-50" },
+    el("div", { class: "flex items-center gap-4" },
+      r.decision ? verdictBadge(r.decision) : el("span", { class: "text-xs text-slate-400" }, r.status),
+      el("div", {},
+        el("div", { class: "font-medium" }, r.applicant_id || "(unknown applicant)"),
+        el("div", { class: "text-sm text-slate-500" }, r.rationale || "")
+      )
+    ),
+    el("div", { class: "text-right text-sm text-slate-500" },
+      el("div", {}, fmtPKR(r.approved_amount_pkr)),
+      el("div", {}, fmtDate(r.created_at))
+    )
+  );
+}
+
+async function runSearch() {
+  const q = document.getElementById("search-box").value.trim();
+  const results = document.getElementById("search-results");
+  results.innerHTML = "";
+  if (!q) return;
+  results.appendChild(skeleton(2));
+  try {
+    const applicants = await fetchJSON(`/api/applicants?search=${encodeURIComponent(q)}&limit=8`);
+    results.innerHTML = "";
+    if (applicants.length === 0) {
+      results.appendChild(emptyState(`No applicants matching "${q}".`));
+      return;
+    }
+    const box = el("div", { class: "bg-white border border-slate-200 rounded-lg divide-y divide-slate-200 mb-2" });
+    applicants.forEach((a) => {
+      box.appendChild(el(
+        "a",
+        { href: `review.html?applicant_id=${encodeURIComponent(a.applicant_id)}&run=1`,
+          class: "flex items-center justify-between px-4 py-3 hover:bg-slate-50" },
+        el("span", { class: "font-medium" }, a.applicant_id),
+        el("span", { class: "text-sm text-slate-500" }, a.sector || "")
+      ));
+    });
+    results.appendChild(box);
+  } catch (err) {
+    results.innerHTML = "";
+    results.appendChild(errorState(err.message));
+  }
+}
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+});
+document.getElementById("search-btn").addEventListener("click", runSearch);
+document.getElementById("search-box").addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+setActiveTab("escalated");
+</script>
+</body>
+</html>

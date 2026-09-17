@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CreditSense — New Applicant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+  <span class="font-bold text-lg">CreditSense</span>
+  <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">Work Queue</a>
+  <a href="regulations.html" class="text-sm text-slate-500 hover:text-slate-900">Regulations</a>
+  <a href="portfolio.html" class="text-sm text-slate-500 hover:text-slate-900">Portfolio</a>
+  <a href="audit.html" class="text-sm text-slate-500 hover:text-slate-900">Audit Trail</a>
+</nav>
+
+<main class="max-w-3xl mx-auto px-6 py-8">
+  <h1 class="text-2xl font-bold mb-1">New Applicant</h1>
+  <p class="text-slate-500 text-sm mb-6">
+    For an applicant who has never been seeded into CreditSense. Download the intake
+    template, fill it in a PDF viewer, and upload it back -- or just fill the form
+    below by hand. Nothing is saved until you click "Run underwriting", which first
+    creates the applicant's record, then runs the same four agents as any other case.
+  </p>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-4 mb-4">
+    <h2 class="font-semibold mb-2">1. Download the intake template</h2>
+    <a href="assets/creditsense_intake_template.pdf" download
+       class="inline-block bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg">
+      Download PDF template
+    </a>
+    <p class="text-xs text-slate-500 mt-2">A fillable PDF -- open it in your browser or Acrobat/Preview, type into each field, save, then upload it below.</p>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-4 mb-4">
+    <h2 class="font-semibold mb-2">2. Upload the filled PDF (optional)</h2>
+    <input id="pdf-input" type="file" accept="application/pdf" class="text-sm" />
+    <div id="upload-status" class="mt-2 text-sm"></div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-4 mb-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold">3. Confirm or fill in the details</h2>
+      <button id="toggle-json" class="text-xs text-indigo-600 hover:underline">Edit as JSON</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">
+      Document details (what a real uploaded document would carry) and bank/credit-bureau
+      details (ECIB score, payment history, etc.) -- for an existing applicant these come
+      from their file automatically; for a brand-new one, both are needed for ML scoring
+      and compliance to run at all rather than escalating for missing data.
+    </p>
+
+    <h3 class="text-sm font-semibold text-slate-700 mb-2">Document details</h3>
+    <div id="form-fields" class="space-y-3 mb-5"></div>
+
+    <h3 class="text-sm font-semibold text-slate-700 mb-2">Bank / credit-bureau details</h3>
+    <div id="record-fields" class="space-y-3"></div>
+
+    <div id="json-panel" class="hidden mt-4 border-t border-slate-200 pt-4">
+      <textarea id="json-box" rows="14" spellcheck="false"
+                class="w-full border border-slate-300 rounded-lg p-2 text-xs font-mono"></textarea>
+      <button id="apply-json" class="mt-2 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg">Apply JSON to form</button>
+      <div id="json-error" class="text-sm text-red-700 mt-2"></div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-lg p-4 mb-4 space-y-3">
+    <h2 class="font-semibold">4. Application details</h2>
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Applicant ID (new, not yet in the system)</label>
+      <input id="applicant-id" type="text" placeholder="e.g. SME-NEW-0001"
+             class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" />
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Requested amount (PKR, optional)</label>
+        <input id="requested-amount" type="number" min="0"
+               class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Tenor (months, optional)</label>
+        <input id="tenor-months" type="number" min="0"
+               class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full" />
+      </div>
+    </div>
+    <label class="flex items-center gap-2 text-sm text-slate-600">
+      <input id="is-clean-facility" type="checkbox" /> Clean facility (unsecured / personal-guarantee only)
+    </label>
+  </div>
+
+  <button id="run-btn" class="w-full bg-emerald-600 text-white font-medium py-3 rounded-lg">Run underwriting</button>
+  <div id="run-error" class="mt-2"></div>
+</main>
+
+<script>
+const { el, fetchJSON, unresolvedBadge, errorState } = CS;
+
+const FIELD_DEFS = [
+  ["current_ratio", "Current Ratio", "e.g. 1.5"],
+  ["debt_to_equity_ratio", "Debt-to-Equity Ratio", "e.g. 0.8"],
+  ["existing_loan_exposure_pkr", "Existing Loan Exposure (PKR)", "e.g. Rs. 2,130,819 or 2130819"],
+  ["collateral_coverage_ratio", "Collateral Coverage Ratio", "e.g. 0.9 -- leave blank if unknown"],
+  ["annual_bank_turnover_pkr", "Annual Bank Turnover (PKR)", "e.g. PKR 40,000,000 or 40000000"],
+  ["years_in_business", "Years in Business", "e.g. 8"],
+  ["sector_risk_code", "Sector", "e.g. Retail/Trade, Textile, Technology"],
+];
+
+// The 10 "bank record" fields -- normally on file at the bank already. For a brand-new
+// applicant there is no file, so these get written as a real Applicant row (POST
+// /api/applicants) right before underwriting runs, rather than travelling with the
+// document itself -- financial_analyst.py has always read them exclusively from a DB
+// record, never from raw_fields, and that logic is untouched.
+const DOCUMENTATION_TIER_OPTIONS = ["", "Bank-Statement-Only", "Unaudited Financials", "Audited Financials"];
+const RECORD_FIELD_DEFS = [
+  ["documentation_tier", "Documentation Tier", "select"],
+  ["ecib_score", "eCIB Score", "e.g. 720"],
+  ["kibor_sensitivity_pct", "KIBOR Sensitivity (%)", "e.g. 0.3"],
+  ["late_payment_count_12m", "Late Payments (last 12 months)", "e.g. 0"],
+  ["bank_statement_volatility", "Bank Statement Volatility", "e.g. 0.4"],
+  ["working_capital_cycle_days", "Working Capital Cycle (days)", "e.g. 35"],
+  ["utility_default_count_12m", "Utility Defaults (last 12 months)", "e.g. 0"],
+  ["revenue_growth_yoy_pct", "Revenue Growth YoY (%)", "e.g. 6.5 -- can be negative"],
+  ["guarantor_net_worth_pkr", "Guarantor Net Worth (PKR)", "e.g. 15000000"],
+  ["group_associate_exposure_pkr", "Group / Associate Exposure (PKR)", "e.g. 0"],
+];
+
+const formValues = {};
+FIELD_DEFS.forEach(([name]) => formValues[name] = "");
+const recordValues = {};
+RECORD_FIELD_DEFS.forEach(([name]) => recordValues[name] = "");
+let notesValue = "";
+let unresolvedSet = new Set();
+
+function renderForm() {
+  const container = document.getElementById("form-fields");
+  container.innerHTML = "";
+  FIELD_DEFS.forEach(([name, label, hint]) => {
+    const isUnresolved = unresolvedSet.has(name);
+    const input = el("input", {
+      type: "text", value: formValues[name], placeholder: hint,
+      class: "border rounded-lg px-3 py-2 text-sm w-full " + (isUnresolved ? "border-amber-400 bg-amber-50" : "border-slate-300"),
+      oninput: (e) => { formValues[name] = e.target.value; syncJsonView(); },
+    });
+    container.appendChild(el("div", {},
+      el("label", { class: "flex items-center gap-2 text-sm text-slate-600 mb-1" },
+        label, isUnresolved ? unresolvedBadge() : null),
+      input
+    ));
+  });
+  container.appendChild(el("div", {},
+    el("label", { class: "block text-sm text-slate-600 mb-1" },
+      "Credit Officer's Notes", unresolvedSet.has("notes") ? unresolvedBadge() : null),
+    el("textarea", {
+      rows: 3, placeholder: "English or Urdu-English is fine",
+      class: "border border-slate-300 rounded-lg px-3 py-2 text-sm w-full",
+      oninput: (e) => { notesValue = e.target.value; syncJsonView(); },
+    }, notesValue)
+  ));
+}
+
+function renderRecordFields() {
+  const container = document.getElementById("record-fields");
+  container.innerHTML = "";
+  RECORD_FIELD_DEFS.forEach(([name, label, hintOrKind]) => {
+    const isUnresolved = unresolvedSet.has(name);
+    const badgeClass = "border rounded-lg px-3 py-2 text-sm w-full " + (isUnresolved ? "border-amber-400 bg-amber-50" : "border-slate-300");
+    let input;
+    if (hintOrKind === "select") {
+      input = el("select", {
+        class: badgeClass,
+        onchange: (e) => { recordValues[name] = e.target.value; syncJsonView(); },
+      }, ...DOCUMENTATION_TIER_OPTIONS.map((opt) =>
+        el("option", { value: opt, selected: recordValues[name] === opt ? "" : null }, opt || "-- Select --")
+      ));
+    } else {
+      input = el("input", {
+        type: "text", value: recordValues[name], placeholder: hintOrKind,
+        class: badgeClass,
+        oninput: (e) => { recordValues[name] = e.target.value; syncJsonView(); },
+      });
+    }
+    container.appendChild(el("div", {},
+      el("label", { class: "flex items-center gap-2 text-sm text-slate-600 mb-1" },
+        label, isUnresolved ? unresolvedBadge() : null),
+      input
+    ));
+  });
+}
+
+function syncJsonView() {
+  const box = document.getElementById("json-box");
+  if (box) box.value = JSON.stringify({ ...formValues, ...recordValues, notes: notesValue }, null, 2);
+}
+
+document.getElementById("toggle-json").addEventListener("click", () => {
+  document.getElementById("json-panel").classList.toggle("hidden");
+  syncJsonView();
+});
+
+document.getElementById("apply-json").addEventListener("click", () => {
+  const errEl = document.getElementById("json-error");
+  errEl.textContent = "";
+  try {
+    const parsed = JSON.parse(document.getElementById("json-box").value);
+    FIELD_DEFS.forEach(([name]) => { if (name in parsed) formValues[name] = String(parsed[name]); });
+    RECORD_FIELD_DEFS.forEach(([name]) => { if (name in parsed) recordValues[name] = String(parsed[name]); });
+    if ("notes" in parsed) notesValue = String(parsed.notes || "");
+    unresolvedSet = new Set(); // manual edit -- no longer "unresolved from extraction"
+    renderForm();
+    renderRecordFields();
+  } catch (err) {
+    errEl.textContent = "Invalid JSON: " + err.message;
+  }
+});
+
+document.getElementById("pdf-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  const status = document.getElementById("upload-status");
+  if (!file) return;
+  status.textContent = "Uploading and parsing...";
+  status.className = "mt-2 text-sm text-slate-500";
+  try {
+    const body = new FormData();
+    body.append("file", file);
+    const result = await fetchJSON("/api/applicants/parse-document", { method: "POST", body });
+
+    FIELD_DEFS.forEach(([name]) => { if (result.fields[name]) formValues[name] = result.fields[name]; });
+    RECORD_FIELD_DEFS.forEach(([name]) => {
+      if (!result.fields[name]) return;
+      // Unlike the document fields, the record fields feed the ML API directly with
+      // no currency-format parsing step downstream -- strip commas/whitespace here so
+      // a PDF value like "15,000,000" lands in a plain numeric input as 15000000.
+      recordValues[name] = name === "documentation_tier"
+        ? result.fields[name] : result.fields[name].replace(/,/g, "").trim();
+    });
+    if (result.fields.notes) notesValue = result.fields.notes;
+    unresolvedSet = new Set(result.unresolved_fields);
+    renderForm();
+    renderRecordFields();
+    syncJsonView();
+
+    const notes = [];
+    if (result.extraction_method === "text_scan") {
+      notes.push("Extracted from plain text (no fillable form fields found) -- please double-check every value.");
+    }
+    result.warnings.forEach((w) => notes.push(w));
+    if (unresolvedSet.size) {
+      notes.push(`${unresolvedSet.size} field(s) could not be read -- fill them in below.`);
+    }
+    status.textContent = notes.length ? notes.join(" ") : "All fields extracted.";
+    status.className = "mt-2 text-sm " + (notes.length ? "text-amber-700" : "text-emerald-700");
+  } catch (err) {
+    status.textContent = "Could not parse this PDF: " + err.message;
+    status.className = "mt-2 text-sm text-red-700";
+  }
+});
+
+function buildRawProfileJson() {
+  const profile = {};
+  RECORD_FIELD_DEFS.forEach(([name]) => {
+    const raw = (recordValues[name] || "").trim();
+    if (!raw) return; // omit entirely -- financial_analyst.py must see it as missing, not as 0/blank
+    if (name === "documentation_tier") {
+      profile[name] = raw;
+      return;
+    }
+    const num = Number(raw);
+    if (!Number.isNaN(num)) profile[name] = num;
+  });
+  return profile;
+}
+
+document.getElementById("run-btn").addEventListener("click", async () => {
+  const errEl = document.getElementById("run-error");
+  errEl.innerHTML = "";
+  const applicantId = document.getElementById("applicant-id").value.trim();
+  if (!applicantId) {
+    errEl.appendChild(errorState("Enter an applicant ID before running underwriting."));
+    return;
+  }
+
+  const runBtn = document.getElementById("run-btn");
+  runBtn.disabled = true;
+  runBtn.textContent = "Creating applicant record...";
+  try {
+    await fetchJSON("/api/applicants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        applicant_id: applicantId,
+        sector: formValues.sector_risk_code || null,
+        years_in_business: formValues.years_in_business ? Number(formValues.years_in_business) : null,
+        raw_profile_json: buildRawProfileJson(),
+      }),
+    });
+  } catch (err) {
+    runBtn.disabled = false;
+    runBtn.textContent = "Run underwriting";
+    errEl.appendChild(errorState("Could not save the applicant record: " + err.message));
+    return;
+  }
+
+  const application = {
+    applicant_id: applicantId,
+    raw_fields: { ...formValues },
+    notes: notesValue || null,
+    requested_amount_pkr: document.getElementById("requested-amount").value
+      ? Number(document.getElementById("requested-amount").value) : null,
+    is_clean_facility: document.getElementById("is-clean-facility").checked,
+    tenor_months: document.getElementById("tenor-months").value
+      ? Number(document.getElementById("tenor-months").value) : null,
+  };
+  sessionStorage.setItem("cs_new_application", JSON.stringify(application));
+  location.href = `review.html?run=1&source=session&applicant_id=${encodeURIComponent(applicantId)}`;
+});
+
+renderForm();
+renderRecordFields();
+</script>
+</body>
+</html>

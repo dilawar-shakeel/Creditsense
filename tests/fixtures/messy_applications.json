@@ -1,0 +1,973 @@
+[
+  {
+    "applicant_id": "SME-033554",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.3825400001529238,
+      "debt_to_equity_ratio": 0.3420804207402145,
+      "existing_loan_exposure_pkr": "Rs. 2,130,819",
+      "collateral_coverage_ratio": 0.6851747869441589,
+      "annual_bank_turnover_pkr": "Rs. 139,133,212",
+      "years_in_business": 7.23059045467255
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-009428",
+    "sector_risk_code": "IT/Tech Services",
+    "raw_fields": {
+      "current_ratio": 1.1399269986296845,
+      "debt_to_equity_ratio": 1.839349298003322,
+      "existing_loan_exposure_pkr": "391324",
+      "collateral_coverage_ratio": 1.3219890227902888,
+      "annual_bank_turnover_pkr": "2320006",
+      "years_in_business": 26.758487009703448
+    },
+    "notes": "client ka cash flow seasonal hai, Eid se pehle spike hota hai",
+    "noise_applied": [
+      "ocr_digit_transposition",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-000200",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 1.145180269871098,
+      "debt_to_equity_ratio": 0.8998403340040938,
+      "existing_loan_exposure_pkr": "2,252,132",
+      "collateral_coverage_ratio": 2.2582258381657065,
+      "annual_bank_turnover_pkr": "15,601,515",
+      "years_in_business": 11.091799103654983
+    },
+    "notes": "owner ne bataya keh naya order aaya hai, next quarter mein growth expected hai",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-012448",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 0.8776769735697181,
+      "debt_to_equity_ratio": 1.9342211206351336,
+      "existing_loan_exposure_pkr": "Rs. 433,690",
+      "collateral_coverage_ratio": 0.4884722671743435,
+      "annual_bank_turnover_pkr": "Rs. 4,135,699",
+      "years_in_business": 1.7134041078820363
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-039490",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 0.7481349669996018,
+      "debt_to_equity_ratio": 0.973658460689269,
+      "existing_loan_exposure_pkr": "PKR 656,553",
+      "collateral_coverage_ratio": 0.7534208459557243,
+      "annual_bank_turnover_pkr": "PKR 42,116,111",
+      "years_in_business": 10.948339691605158
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-042725",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 0.764932921384171,
+      "debt_to_equity_ratio": 1.92741498565346,
+      "existing_loan_exposure_pkr": "456,890",
+      "collateral_coverage_ratio": 0.7112422595750011,
+      "annual_bank_turnover_pkr": "9,014,089",
+      "years_in_business": 2.304245502417809
+    },
+    "notes": "thoda late payment history hai but overall trustworthy client lagta hai",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-010823",
+    "sector_risk_code": "Leather/Sports Goods",
+    "raw_fields": {
+      "current_ratio": 0.8916518263208882,
+      "debt_to_equity_ratio": 1.1814948927250029,
+      "existing_loan_exposure_pkr": "Rs. 4,328,432",
+      "collateral_coverage_ratio": 0.5772348699100481,
+      "annual_bank_turnover_pkr": "Rs. 24,922,614",
+      "years_in_business": 13.04676188822609
+    },
+    "notes": "collateral documents abhi tak submit nahi hue, follow-up required",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-049499",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 0.9966820330274774,
+      "debt_to_equity_ratio": 2.369065352056517,
+      "existing_loan_exposure_pkr": "3925460",
+      "collateral_coverage_ratio": 1.0622815987939989,
+      "annual_bank_turnover_pkr": "59446959",
+      "years_in_business": 28.722822504060257
+    },
+    "notes": null,
+    "noise_applied": [
+      "ocr_digit_transposition"
+    ]
+  },
+  {
+    "applicant_id": "SME-004145",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.4310681683858033,
+      "debt_to_equity_ratio": 1.5174205981375737,
+      "existing_loan_exposure_pkr": "551,450",
+      "collateral_coverage_ratio": null,
+      "annual_bank_turnover_pkr": "251,073,686",
+      "years_in_business": 5.110046991164846
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation",
+      "missing_collateral"
+    ]
+  },
+  {
+    "applicant_id": "SME-036959",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 0.8968572447024821,
+      "debt_to_equity_ratio": 2.1431319788959526,
+      "existing_loan_exposure_pkr": "Rs. 5,430,138",
+      "collateral_coverage_ratio": 0.128974081448098,
+      "annual_bank_turnover_pkr": "Rs. 66,199,189",
+      "years_in_business": 16.536854611912315
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-043107",
+    "sector_risk_code": "Other Services",
+    "raw_fields": {
+      "current_ratio": 1.1483436969708438,
+      "debt_to_equity_ratio": 1.944184235741054,
+      "existing_loan_exposure_pkr": "PKR 3,308,499",
+      "collateral_coverage_ratio": 0.0802122658580303,
+      "annual_bank_turnover_pkr": "PKR 182,788,744",
+      "years_in_business": 5.955148789504023
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-038696",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 0.5748954163322989,
+      "debt_to_equity_ratio": 5.92923625091541,
+      "existing_loan_exposure_pkr": "2,519,739",
+      "collateral_coverage_ratio": 0.960083920915147,
+      "annual_bank_turnover_pkr": "274,245,133",
+      "years_in_business": 9.307536772273822
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-006189",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.6592947773723634,
+      "debt_to_equity_ratio": 3.827955825359868,
+      "existing_loan_exposure_pkr": "Rs. 7,442,279",
+      "collateral_coverage_ratio": 1.8132285189669035,
+      "annual_bank_turnover_pkr": "Rs. 49,556,845",
+      "years_in_business": 3.515276074285932
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-001415",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 1.9280966149740144,
+      "debt_to_equity_ratio": 0.7992176050082008,
+      "existing_loan_exposure_pkr": "PKR 9,500,205",
+      "collateral_coverage_ratio": 0.3137832569778093,
+      "annual_bank_turnover_pkr": "PKR 9,475,865",
+      "years_in_business": 24.044671329234912
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-018472",
+    "sector_risk_code": "Steel/Re-rolling",
+    "raw_fields": {
+      "current_ratio": 0.6106271702296385,
+      "debt_to_equity_ratio": 0.4239174848680134,
+      "existing_loan_exposure_pkr": "1,545,584",
+      "collateral_coverage_ratio": null,
+      "annual_bank_turnover_pkr": "286,723,640",
+      "years_in_business": 6.540806635746582
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation",
+      "missing_collateral"
+    ]
+  },
+  {
+    "applicant_id": "SME-029283",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 1.6820596979367506,
+      "debt_to_equity_ratio": 0.5845968821806086,
+      "existing_loan_exposure_pkr": "894476",
+      "collateral_coverage_ratio": 0.271906518592949,
+      "annual_bank_turnover_pkr": "29751522",
+      "years_in_business": 1.9927899234677016
+    },
+    "notes": null,
+    "noise_applied": [
+      "ocr_digit_transposition"
+    ]
+  },
+  {
+    "applicant_id": "SME-015178",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 1.2036608378393443,
+      "debt_to_equity_ratio": 1.927427179827093,
+      "existing_loan_exposure_pkr": "PKR 11,311,916",
+      "collateral_coverage_ratio": 1.1817891140661108,
+      "annual_bank_turnover_pkr": "PKR 1,972,810",
+      "years_in_business": 24.42290589107367
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-034305",
+    "sector_risk_code": "Other Services",
+    "raw_fields": {
+      "current_ratio": 0.3616884517259415,
+      "debt_to_equity_ratio": 2.996125901594987,
+      "existing_loan_exposure_pkr": "3636868",
+      "collateral_coverage_ratio": 1.4640959244983716,
+      "annual_bank_turnover_pkr": "57428488",
+      "years_in_business": 10.627053486974322
+    },
+    "notes": null,
+    "noise_applied": [
+      "ocr_digit_transposition"
+    ]
+  },
+  {
+    "applicant_id": "SME-012610",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.530551941818889,
+      "debt_to_equity_ratio": 7.559665805011552,
+      "existing_loan_exposure_pkr": "Rs. 5,329,761",
+      "collateral_coverage_ratio": 1.517145096208246,
+      "annual_bank_turnover_pkr": "Rs. 49,081,098",
+      "years_in_business": 3.848859607158688
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-012145",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 0.9683816816501642,
+      "debt_to_equity_ratio": 1.382549548896992,
+      "existing_loan_exposure_pkr": "PKR 4,383,265",
+      "collateral_coverage_ratio": 1.929711643890006,
+      "annual_bank_turnover_pkr": "PKR 40,351,808",
+      "years_in_business": 16.120222882614414
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-006114",
+    "sector_risk_code": "Other Services",
+    "raw_fields": {
+      "current_ratio": 0.6099547392814667,
+      "debt_to_equity_ratio": 4.442108339621623,
+      "existing_loan_exposure_pkr": "4,403,887",
+      "collateral_coverage_ratio": 0.2816839324317193,
+      "annual_bank_turnover_pkr": "30,505,546",
+      "years_in_business": 4.179072918677766
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-015909",
+    "sector_risk_code": "Steel/Re-rolling",
+    "raw_fields": {
+      "current_ratio": 0.7954503764788435,
+      "debt_to_equity_ratio": 2.6666124323460743,
+      "existing_loan_exposure_pkr": "Rs. 2,004,295",
+      "collateral_coverage_ratio": 0.4788272883386882,
+      "annual_bank_turnover_pkr": "Rs. 12,651,330",
+      "years_in_business": 12.25553262460864
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-000822",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 1.1308629822583245,
+      "debt_to_equity_ratio": 0.5408749098961266,
+      "existing_loan_exposure_pkr": "PKR 11,764,341",
+      "collateral_coverage_ratio": 0.0531384785693661,
+      "annual_bank_turnover_pkr": "PKR 20,032,313",
+      "years_in_business": 3.3710621731220884
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-015119",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 1.097459123969055,
+      "debt_to_equity_ratio": 2.9355343326214185,
+      "existing_loan_exposure_pkr": "3,385,679",
+      "collateral_coverage_ratio": 1.1482098770406308,
+      "annual_bank_turnover_pkr": "135,842,724",
+      "years_in_business": 7.520167826929899
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-013467",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 0.7266222669037694,
+      "debt_to_equity_ratio": 0.7730605204915351,
+      "existing_loan_exposure_pkr": "Rs. 3,738,491",
+      "collateral_coverage_ratio": 0.3649480591872799,
+      "annual_bank_turnover_pkr": "Rs. 40,971,876",
+      "years_in_business": 5.702182798323154
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-026498",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 1.3759815111795584,
+      "debt_to_equity_ratio": 1.771021691136772,
+      "existing_loan_exposure_pkr": "PKR 2,024,520",
+      "collateral_coverage_ratio": 1.2859526680896949,
+      "annual_bank_turnover_pkr": "PKR 65,013,456",
+      "years_in_business": 6.010487648504484
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-042112",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 0.708493027463934,
+      "debt_to_equity_ratio": 0.3328632355549073,
+      "existing_loan_exposure_pkr": "1,591,762",
+      "collateral_coverage_ratio": 1.030010467474636,
+      "annual_bank_turnover_pkr": "1,015,513",
+      "years_in_business": 16.892702377757754
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-030189",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 0.783925108992501,
+      "debt_to_equity_ratio": 1.755864799937188,
+      "existing_loan_exposure_pkr": "Rs. 787,222",
+      "collateral_coverage_ratio": 0.4711160673190121,
+      "annual_bank_turnover_pkr": "Rs. 1,078,711",
+      "years_in_business": 14.551650302158722
+    },
+    "notes": "guarantor ka net worth strong hai, risk kam samjha ja sakta hai",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-037238",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.0472963631461631,
+      "debt_to_equity_ratio": 1.1955866672042952,
+      "existing_loan_exposure_pkr": "PKR 1,172,278",
+      "collateral_coverage_ratio": 0.5252963075625917,
+      "annual_bank_turnover_pkr": "PKR 30,815,471",
+      "years_in_business": 8.450760539881085
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-033110",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 1.2620328757501305,
+      "debt_to_equity_ratio": 1.7241471508638324,
+      "existing_loan_exposure_pkr": "282,894",
+      "collateral_coverage_ratio": 1.162694216030843,
+      "annual_bank_turnover_pkr": "563,638,163",
+      "years_in_business": 1.3085832957870946
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-036481",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.6292462120101163,
+      "debt_to_equity_ratio": 1.940477622686684,
+      "existing_loan_exposure_pkr": "Rs. 651,927",
+      "collateral_coverage_ratio": 1.6289333646953823,
+      "annual_bank_turnover_pkr": "Rs. 6,777,183",
+      "years_in_business": 5.897467903521537
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-024149",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.2007295767026285,
+      "debt_to_equity_ratio": 1.3657644474044814,
+      "existing_loan_exposure_pkr": "PKR 1,500,383",
+      "collateral_coverage_ratio": 1.8705462966813649,
+      "annual_bank_turnover_pkr": "PKR 68,204,537",
+      "years_in_business": 4.186141601109224
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-005504",
+    "sector_risk_code": "Leather/Sports Goods",
+    "raw_fields": {
+      "current_ratio": 1.1530804804078103,
+      "debt_to_equity_ratio": 0.9980356807894206,
+      "existing_loan_exposure_pkr": "603,606",
+      "collateral_coverage_ratio": 1.2776914223784748,
+      "annual_bank_turnover_pkr": "7,575,986",
+      "years_in_business": 5.461100520760417
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-003919",
+    "sector_risk_code": "IT/Tech Services",
+    "raw_fields": {
+      "current_ratio": 1.288391951495183,
+      "debt_to_equity_ratio": 2.914351768569307,
+      "existing_loan_exposure_pkr": "Rs. 1,635,481",
+      "collateral_coverage_ratio": 0.3826474365952184,
+      "annual_bank_turnover_pkr": "Rs. 13,831,825",
+      "years_in_business": 4.71302275429689
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-038479",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.784511809819999,
+      "debt_to_equity_ratio": 0.6742942828622034,
+      "existing_loan_exposure_pkr": "PKR 212,478",
+      "collateral_coverage_ratio": 0.492777316871453,
+      "annual_bank_turnover_pkr": "PKR 3,095,480",
+      "years_in_business": 9.22726745846403
+    },
+    "notes": "business slow chal raha hai is saal, load-shedding ne bhi asar dala",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-021124",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 0.9194095401496012,
+      "debt_to_equity_ratio": 1.015683673850247,
+      "existing_loan_exposure_pkr": "1,934,613",
+      "collateral_coverage_ratio": 0.3453855506768725,
+      "annual_bank_turnover_pkr": "41,859,740",
+      "years_in_business": 10.631084847715442
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-049718",
+    "sector_risk_code": "Leather/Sports Goods",
+    "raw_fields": {
+      "current_ratio": 1.4295802052088948,
+      "debt_to_equity_ratio": 0.9793055534943352,
+      "existing_loan_exposure_pkr": "Rs. 2,183,903",
+      "collateral_coverage_ratio": 0.2010637974507748,
+      "annual_bank_turnover_pkr": "Rs. 4,971,737",
+      "years_in_business": 2.264025073455369
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-042295",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 0.9396859230841024,
+      "debt_to_equity_ratio": 2.984104398543606,
+      "existing_loan_exposure_pkr": "PKR 3,492,948",
+      "collateral_coverage_ratio": 0.984550808724193,
+      "annual_bank_turnover_pkr": "PKR 15,302,404",
+      "years_in_business": 5.6248449999919705
+    },
+    "notes": "bohat purana relationship hai bank ke saath, koi issue nahi raha ab tak",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-047610",
+    "sector_risk_code": "Leather/Sports Goods",
+    "raw_fields": {
+      "current_ratio": 2.126347156415969,
+      "debt_to_equity_ratio": 2.911629732989545,
+      "existing_loan_exposure_pkr": "548,355",
+      "collateral_coverage_ratio": 1.594464177825989,
+      "annual_bank_turnover_pkr": "5,823,095",
+      "years_in_business": 15.360083572570804
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-011077",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 1.5296164522309563,
+      "debt_to_equity_ratio": 1.2135347043280815,
+      "existing_loan_exposure_pkr": "Rs. 6,734,567",
+      "collateral_coverage_ratio": 0.8274873747442328,
+      "annual_bank_turnover_pkr": "Rs. 22,250,758",
+      "years_in_business": 2.6517054805814677
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-041515",
+    "sector_risk_code": "Textile/Garments",
+    "raw_fields": {
+      "current_ratio": 0.8938172485125735,
+      "debt_to_equity_ratio": 0.5445830254232144,
+      "existing_loan_exposure_pkr": "8428948",
+      "collateral_coverage_ratio": 1.0261404406408223,
+      "annual_bank_turnover_pkr": "86370018",
+      "years_in_business": 3.0747360369184897
+    },
+    "notes": null,
+    "noise_applied": [
+      "ocr_digit_transposition"
+    ]
+  },
+  {
+    "applicant_id": "SME-022063",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 1.4896027801310492,
+      "debt_to_equity_ratio": 1.752494218059143,
+      "existing_loan_exposure_pkr": "4,962,728",
+      "collateral_coverage_ratio": 0.0377825470350275,
+      "annual_bank_turnover_pkr": "189,691,596",
+      "years_in_business": 11.171614169384204
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-009414",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 0.9573068256945164,
+      "debt_to_equity_ratio": 0.4973085380419308,
+      "existing_loan_exposure_pkr": "Rs. 121,677",
+      "collateral_coverage_ratio": 1.277537658513307,
+      "annual_bank_turnover_pkr": "Rs. 11,442,434",
+      "years_in_business": 3.00728310508705
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-038341",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 1.9449503958255792,
+      "debt_to_equity_ratio": 4.166854576225693,
+      "existing_loan_exposure_pkr": "PKR 1,766,149",
+      "collateral_coverage_ratio": 0.841074332726913,
+      "annual_bank_turnover_pkr": "PKR 1,681,124",
+      "years_in_business": 4.411088210615581
+    },
+    "notes": "revenue is stable lekin buyer concentration zyada hai teen clients pe",
+    "noise_applied": [
+      "currency_format_variation",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-030264",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 0.732976439655483,
+      "debt_to_equity_ratio": 1.8151827955513664,
+      "existing_loan_exposure_pkr": "464,156",
+      "collateral_coverage_ratio": 1.681354681634636,
+      "annual_bank_turnover_pkr": "34,003,227",
+      "years_in_business": 1.208655956826436
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-041253",
+    "sector_risk_code": "IT/Tech Services",
+    "raw_fields": {
+      "current_ratio": 1.0463491413662742,
+      "debt_to_equity_ratio": 0.5046715612993242,
+      "existing_loan_exposure_pkr": "Rs. 1,771,771",
+      "collateral_coverage_ratio": 1.1901532833912891,
+      "annual_bank_turnover_pkr": "Rs. 438,441,675",
+      "years_in_business": 11.927519006169904
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-014645",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 2.370505537880885,
+      "debt_to_equity_ratio": 0.735477056779714,
+      "existing_loan_exposure_pkr": "PKR 1,360,495",
+      "collateral_coverage_ratio": 0.3798116729798602,
+      "annual_bank_turnover_pkr": "PKR 22,308,235",
+      "years_in_business": 0.6595726401802606
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-026336",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 1.3634568246829657,
+      "debt_to_equity_ratio": 2.149289271065819,
+      "existing_loan_exposure_pkr": "8904844",
+      "collateral_coverage_ratio": 0.8481278834453242,
+      "annual_bank_turnover_pkr": "126449606",
+      "years_in_business": 14.221478582750526
+    },
+    "notes": "digital payments barh rahay hain, cash reliance kam ho rahi hai gradually",
+    "noise_applied": [
+      "ocr_digit_transposition",
+      "urdu_english_notes"
+    ]
+  },
+  {
+    "applicant_id": "SME-028103",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.633737628746406,
+      "debt_to_equity_ratio": 2.125359876951434,
+      "existing_loan_exposure_pkr": "Rs. 2,629,586",
+      "collateral_coverage_ratio": 0.7057776542295947,
+      "annual_bank_turnover_pkr": "Rs. 164,936,366",
+      "years_in_business": 5.385121977665103
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-017524",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 1.0809739137527938,
+      "debt_to_equity_ratio": 2.032462707541932,
+      "existing_loan_exposure_pkr": "PKR 422,429",
+      "collateral_coverage_ratio": 0.6663939654866503,
+      "annual_bank_turnover_pkr": "PKR 10,297,787",
+      "years_in_business": 11.9406887278876
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-024713",
+    "sector_risk_code": "Food Processing",
+    "raw_fields": {
+      "current_ratio": 0.7539324786277981,
+      "debt_to_equity_ratio": 5.12084393850757,
+      "existing_loan_exposure_pkr": "724,828",
+      "collateral_coverage_ratio": 0.6130506603126591,
+      "annual_bank_turnover_pkr": "40,522,592",
+      "years_in_business": 10.5024574052345
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-040486",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.6148385955161215,
+      "debt_to_equity_ratio": 1.0698198009066076,
+      "existing_loan_exposure_pkr": "Rs. 317,677",
+      "collateral_coverage_ratio": 1.5231336948734076,
+      "annual_bank_turnover_pkr": "Rs. 19,564,314",
+      "years_in_business": 11.311790116776292
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-003851",
+    "sector_risk_code": "Other Services",
+    "raw_fields": {
+      "current_ratio": 0.8929500526541773,
+      "debt_to_equity_ratio": 1.8101867184727527,
+      "existing_loan_exposure_pkr": "PKR 6,683,339",
+      "collateral_coverage_ratio": 0.2623031217154602,
+      "annual_bank_turnover_pkr": "PKR 49,321,360",
+      "years_in_business": 15.814409562449782
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-040041",
+    "sector_risk_code": "Rice/Agri-processing",
+    "raw_fields": {
+      "current_ratio": 0.9060807885378234,
+      "debt_to_equity_ratio": 2.0899595050451416,
+      "existing_loan_exposure_pkr": "1,612,849",
+      "collateral_coverage_ratio": 1.4800729057976003,
+      "annual_bank_turnover_pkr": "342,859,639",
+      "years_in_business": 1.2365465545605172
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-015268",
+    "sector_risk_code": "Pharma/Surgical",
+    "raw_fields": {
+      "current_ratio": 1.1072847056510793,
+      "debt_to_equity_ratio": 1.1814692037758523,
+      "existing_loan_exposure_pkr": "Rs. 1,141,400",
+      "collateral_coverage_ratio": 1.7553288196689465,
+      "annual_bank_turnover_pkr": "Rs. 14,288,651",
+      "years_in_business": 3.0737729577118125
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-049147",
+    "sector_risk_code": "Retail/Trade",
+    "raw_fields": {
+      "current_ratio": 1.9320467384267923,
+      "debt_to_equity_ratio": 1.9964508037380964,
+      "existing_loan_exposure_pkr": "PKR 1,198,746",
+      "collateral_coverage_ratio": 0.48281817371566,
+      "annual_bank_turnover_pkr": "PKR 11,336,585",
+      "years_in_business": 10.259199442079549
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-030002",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 0.871090739438252,
+      "debt_to_equity_ratio": 0.3915939872462631,
+      "existing_loan_exposure_pkr": "1,414,730",
+      "collateral_coverage_ratio": 0.7048769262075494,
+      "annual_bank_turnover_pkr": "6,598,572",
+      "years_in_business": 5.840396287175939
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-045927",
+    "sector_risk_code": "Steel/Re-rolling",
+    "raw_fields": {
+      "current_ratio": 1.8143134199982465,
+      "debt_to_equity_ratio": 2.986919180863215,
+      "existing_loan_exposure_pkr": "Rs. 2,864,569",
+      "collateral_coverage_ratio": 1.1696479607212265,
+      "annual_bank_turnover_pkr": "Rs. 105,237,691",
+      "years_in_business": 3.980425744716776
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-043825",
+    "sector_risk_code": "Construction/Bldg Materials",
+    "raw_fields": {
+      "current_ratio": 1.188152510972012,
+      "debt_to_equity_ratio": 3.1382646257547475,
+      "existing_loan_exposure_pkr": "PKR 813,359",
+      "collateral_coverage_ratio": 1.3063404799990364,
+      "annual_bank_turnover_pkr": "PKR 48,188,304",
+      "years_in_business": 14.616226683938091
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  },
+  {
+    "applicant_id": "SME-017241",
+    "sector_risk_code": "Auto Parts/Engineering",
+    "raw_fields": {
+      "current_ratio": 1.980898374364416,
+      "debt_to_equity_ratio": 4.769059679187485,
+      "existing_loan_exposure_pkr": "3,871,187",
+      "collateral_coverage_ratio": 1.5850377012964425,
+      "annual_bank_turnover_pkr": "1,650,338",
+      "years_in_business": 2.726288389242133
+    },
+    "notes": null,
+    "noise_applied": [
+      "currency_format_variation"
+    ]
+  }
+]
