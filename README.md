@@ -19,7 +19,6 @@ Everything runs locally on Docker Compose. The data is synthetic; the SBP regula
 | **API** | `/predict/credit-risk`, `/applications/underwrite` (+ SSE trace), applicant/decision/regulation/portfolio reads, PDF intake. | `src/creditsense/api/` |
 | **Frontend** | Six screens, vanilla JS + Tailwind CDN, served by the same FastAPI app. No build step. | `src/creditsense/frontend/` |
 
-**348 offline tests** (plus 7 marker-gated live tests), Ruff-clean, coverage enforced in CI.
 
 ---
 
