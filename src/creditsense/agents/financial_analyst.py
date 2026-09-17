@@ -89,6 +89,8 @@ def analyze(application: LoanApplication, session: Session) -> ParsedFinancials:
     # 1. Document fields.
     for name in DOCUMENT_FIELDS:
         raw_value = application.raw_fields.get(name)
+        if isinstance(raw_value, str) and not raw_value.strip():
+            raw_value = None
         value = parse_pkr_amount(raw_value) if name in _PKR_FIELDS else raw_value
         if value is None:
             unresolved.append(name)
